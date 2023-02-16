@@ -53,11 +53,9 @@ def learn_mspn(
     from rspn.learning.structure_learning import get_next_operation, learn_structure
 
     def l_mspn(data, ds_context, cols, rows, min_instances_slice, threshold, ohe):
-        # 返回两个函数：按列和按行切分数据的方法
         split_cols, split_rows = get_splitting_functions(max_sampling_threshold_rows, max_sampling_threshold_cols, cols,
                                                          rows, ohe, threshold, rand_gen, cpus)
 
-        # 返回计算nextop的方法
         nextop = get_next_operation(min_instances_slice)
 
         node = learn_structure(data, ds_context, split_rows, split_cols, leaves, next_operation=nextop)
@@ -124,7 +122,7 @@ def get_splitting_functions(max_sampling_threshold_rows, max_sampling_threshold_
     from spn.algorithms.splitting.PoissonStabilityTest import get_split_cols_poisson_py
     from spn.algorithms.splitting.RDC import get_split_rows_RDC_py
 
-    # 按cols指定的方法split columns，按列切分
+    # split the columns
     if isinstance(cols, str):
 
         if cols == "rdc":
@@ -138,7 +136,7 @@ def get_splitting_functions(max_sampling_threshold_rows, max_sampling_threshold_
     else:
         split_cols = cols
 
-    # 按行切分
+    # split the rows
     if isinstance(rows, str):
 
         if rows == "rdc":
@@ -191,10 +189,6 @@ def get_split_cols_RDC_py(max_sampling_threshold_cols=10000, threshold=0.3, ohe=
 
         if local_data.shape[0] > max_sampling_threshold_cols:
             local_data_sample = local_data[np.random.randint(local_data.shape[0], size=max_sampling_threshold_cols), :]
-            print("rspn_learning - local_data_sample:", type(local_data_sample))
-            print("rspn_learning - local_data_sample:", local_data_sample)
-            # print("rspn_learning - domains:", domains)
-            # print("rspn_learning - meta_types:", meta_types)
             clusters = getIndependentRDCGroups_py(
                 local_data_sample,
                 threshold,

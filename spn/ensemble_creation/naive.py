@@ -28,7 +28,8 @@ def create_naive_all_split_ensemble(schema, hdf_path, sample_size, ensemble_path
             logger.debug(f"Requested {sample_size} samples and got {len(df_samples)} + {len(df_inc_samples)} "
                          f"(for incremental learning)")
         else:
-            df_samples, meta_types, null_values, full_join_est = prep.generate_n_samples(sample_size, # 一个SPN最多容纳多少个sample
+            # sample_size: args.samples_per_spn[0]
+            df_samples, meta_types, null_values, full_join_est = prep.generate_n_samples(sample_size,
                                                                                          single_table=table_obj.table_name,
                                                                                          post_sampling_factor=post_sampling_factor)
 

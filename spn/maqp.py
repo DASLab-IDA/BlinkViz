@@ -13,21 +13,8 @@ from ensemble_compilation.spn_ensemble import read_ensemble
 from ensemble_creation.naive import create_naive_all_split_ensemble, naive_every_relationship_ensemble
 from ensemble_creation.rdc_based import candidate_evaluation
 from evaluation.confidence_interval_evaluation import evaluate_confidence_intervals
-from schemas.flights.schema import gen_flights_1B_schema
-from schemas.flights.schema import gen_flights_5M_schema
-from schemas.flights.schema import gen_flights_50M_schema, gen_flights_50M_partition_schema
-from schemas.flights.schema import gen_flights_500M_schema, gen_flights_5B_schema, gen_flights_500M_partition_schema
-from schemas.flights.schema import gen_flights_500M_not_sampled_schema
-from schemas.flights.schema import gen_flights_500M_stratified_1_schema, gen_flights_500M_stratified_2_schema, gen_flights_500M_stratified_3_schema
-from schemas.imdb.schema import gen_job_light_imdb_schema
-from schemas.ssb.schema import gen_500gb_ssb_schema
-from schemas.ssb.schema import gen_sf1_ssb_schema
-from schemas.ssb.schema import gen_sf10_ssb_schema
+from schemas.flights.schema import gen_flights_500M_schema
 from schemas.ssb.schema import gen_sf50_ssb_schema
-from schemas.tpc_ds.schema import gen_1t_tpc_ds_schema
-from schemas.beijing.schema import gen_beijing_pm_schema
-from schemas.nyctaxi.schema import gen_nyctaxi_schema
-from schemas.us_accidents.schema import gen_us_accident_schema
 
 np.random.seed(1)
 
@@ -42,8 +29,8 @@ if __name__ == '__main__':
     parser.add_argument('--csv_seperator', default='|')
     parser.add_argument('--csv_path', default='../ssb-benchmark')
     parser.add_argument('--hdf_path', default='../ssb-benchmark/gen_hdf')
-    parser.add_argument('--max_rows_per_hdf_file', type=int, default=200000000) # hdf文件最大行数 20M
-    parser.add_argument('--hdf_sample_size', type=int, default=50000000) # hdf sample最大行数 1M 
+    parser.add_argument('--max_rows_per_hdf_file', type=int, default=200000000)
+    parser.add_argument('--hdf_sample_size', type=int, default=50000000)
 
     # generate ensembles
     parser.add_argument('--generate_ensemble', help='Trains SPNs on schema', action='store_true')
@@ -73,7 +60,6 @@ if __name__ == '__main__':
                         action='store_true')
 
     # evaluation
-    #parser.add_argument('--stratified_evaluation', help='Use stratified sample', action='store_true')
     parser.add_argument('--evaluate_cardinalities', help='Evaluates SPN ensemble to compute cardinalities',
                         action='store_true')
     parser.add_argument('--rdc_spn_selection', help='Uses pairwise rdc values to for the SPN compilation',
@@ -126,46 +112,10 @@ if __name__ == '__main__':
 
     # Generate schema
     table_csv_path = args.csv_path + '/{}.csv'
-    if args.dataset == 'imdb-light':
-        schema = gen_job_light_imdb_schema(table_csv_path)
-    elif args.dataset == 'ssb-sf1':
-        schema = gen_sf1_ssb_schema(table_csv_path)
-    elif args.dataset == 'ssb-sf10':
-        schema = gen_sf10_ssb_schema(table_csv_path)
-    elif args.dataset == 'ssb-sf50':
+    if args.dataset == 'ssb-sf50':
         schema = gen_sf50_ssb_schema(table_csv_path)
-    elif args.dataset == 'ssb-500gb':
-        schema = gen_500gb_ssb_schema(table_csv_path)
-    elif args.dataset == 'flights1B':
-        schema = gen_flights_1B_schema(table_csv_path)
-    elif args.dataset == 'flights5M':
-        schema = gen_flights_5M_schema(table_csv_path)
-    elif args.dataset == 'flights50M':
-        schema = gen_flights_50M_schema(table_csv_path)
     elif args.dataset == 'flights500M':
         schema = gen_flights_500M_schema(table_csv_path)
-    elif args.dataset == 'flights500M_ns':
-        schema = gen_flights_500M_not_sampled_schema(table_csv_path)
-    elif args.dataset == 'flights_50M_partition':
-        schema = gen_flights_50M_partition_schema(table_csv_path)
-    elif args.dataset == 'flights_500M_partition':
-        schema = gen_flights_500M_partition_schema(table_csv_path)
-    elif args.dataset == 'flights_500M_ss1':
-        schema = gen_flights_500M_stratified_1_schema(table_csv_path)
-    elif args.dataset == 'flights_500M_ss2':
-        schema = gen_flights_500M_stratified_2_schema(table_csv_path)
-    elif args.dataset == 'flights_500M_ss3':
-        schema = gen_flights_500M_stratified_3_schema(table_csv_path)
-    elif args.dataset == 'flights5B':
-        schema = gen_flights_5B_schema(table_csv_path)
-    elif args.dataset == 'tpc-ds-1t':
-        schema = gen_1t_tpc_ds_schema(table_csv_path)
-    elif args.dataset == 'nyctaxi':
-        schema = gen_nyctaxi_schema(table_csv_path)
-    elif args.dataset == 'beijing':
-        schema = gen_beijing_pm_schema(table_csv_path)
-    elif args.dataset == 'us_accidents':
-        schema = gen_us_accident_schema(table_csv_path)
     else:
         raise ValueError('Dataset unknown')
 

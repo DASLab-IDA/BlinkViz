@@ -99,7 +99,6 @@ def get_next_operation(min_instances_slice=100, min_features_slice=1, multivaria
 
     return next_operation
 
-# 真正的学习过程，返回树的根节点
 def learn_structure(
         dataset,
         ds_context,
@@ -117,12 +116,12 @@ def learn_structure(
     assert create_leaf is not None
     assert next_operation is not None
 
-    root = Product() # 根节点是一个乘积节点
-    root.children.append(None) # root的孩子初始化为None
-    root.cardinality = dataset.shape[0] # root的基数为数据行数
+    root = Product()
+    root.children.append(None)
+    root.cardinality = dataset.shape[0]
 
-    if initial_scope is None: # 如果初始scope是None
-        initial_scope = list(range(dataset.shape[1])) # 初始化scope为列数的范围
+    if initial_scope is None:
+        initial_scope = list(range(dataset.shape[1]))
         num_conditional_cols = None
     elif len(initial_scope) < dataset.shape[1]:
         num_conditional_cols = dataset.shape[1] - len(initial_scope)
@@ -130,14 +129,13 @@ def learn_structure(
         num_conditional_cols = None
         assert len(initial_scope) > dataset.shape[1], "check initial scope: %s" % initial_scope
 
-    tasks = deque() # 一个双向队列
-    tasks.append((dataset, root, 0, initial_scope, False, False)) # 加入这样一个task
+    tasks = deque()
+    tasks.append((dataset, root, 0, initial_scope, False, False))
 
     while tasks:
 
         local_data, parent, children_pos, scope, no_clusters, no_independencies = tasks.popleft()
 
-        # 判断nextop
         operation, op_params = next_operation(
             local_data,
             scope,
@@ -222,8 +220,6 @@ def learn_structure(
 
         elif operation == Operation.SPLIT_COLUMNS:
             split_start_t = perf_counter()
-            print("ds_context:",ds_context)
-            print("scope:",scope)
             data_slices = split_cols(local_data, ds_context, scope)
             split_end_t = perf_counter()
             logging.debug(

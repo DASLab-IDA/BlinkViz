@@ -15,9 +15,9 @@ def read_table_csv(table_obj, csv_seperator=','):
     df_rows = pd.read_csv(table_obj.csv_file_location, header=None, escapechar='\\', encoding='utf-8', quotechar='"',
                           sep=csv_seperator)
     logger.info(f"pd.read_csv finished")
-    # column的名字形如table_name.attr
+    # each column like table_name.attr
     df_rows.columns = [table_obj.table_name + '.' + attr for attr in table_obj.attributes]
-    # 舍弃irrelevant_attributes
+    # drops  irrelevant_attributes
     for attribute in table_obj.irrelevant_attributes:
         df_rows = df_rows.drop(table_obj.table_name + '.' + attribute, axis=1)
 
@@ -62,20 +62,21 @@ def prepare_single_table(schema_graph, table, path, max_distinct_vals=10000, csv
 
     # manage functional dependencies
     logger.info(f"Managing functional dependencies for table {table}")
-    table_meta_data['fd_dict'] = dict() # 函数依赖列表
-    cols_to_be_dropped = [] # 要被舍弃的列
+    table_meta_data['fd_dict'] = dict() 
+    cols_to_be_dropped = [] 
     for attribute_wo_table in table_obj.attributes:
         attribute = table + '.' + attribute_wo_table
-        fd_children = table_obj.children_fd_attributes(attribute) # 被当前属性依赖的属性列表（因为针对attribute里的每一个值，在child中都能找到唯一确定的值对应）
+        # a list of properties that the current property depends on
+        fd_children = table_obj.children_fd_attributes(attribute)
         if len(fd_children) > 0:
             for child in fd_children:
                 logger.info(f"Managing functional dependencies for {child}->{attribute}")
-                distinct_tuples = table_data.drop_duplicates([attribute, child])[[attribute, child]].values # 统计multiplier
+                distinct_tuples = table_data.drop_duplicates([attribute, child])[[attribute, child]].values # multiplier
                 reverse_dict = {}
                 for attribute_value, child_value in distinct_tuples:
                     if reverse_dict.get(attribute_value) is None:
                         reverse_dict[attribute_value] = []
-                    reverse_dict[attribute_value].append(child_value) # 记录一一对应关系
+                    reverse_dict[attribute_value].append(child_value) # 1-1 map
                 if table_meta_data['fd_dict'].get(attribute) is None:
                     table_meta_data['fd_dict'][attribute] = dict()
                 table_meta_data['fd_dict'][attribute][child] = reverse_dict
@@ -86,7 +87,7 @@ def prepare_single_table(schema_graph, table, path, max_distinct_vals=10000, csv
 
     # add multiplier fields
     logger.info("Preparing multipliers for table {}".format(table))
-    incoming_relationships = find_relationships(schema_graph, table, incoming=True) # 当前table的所有incoming关系
+    incoming_relationships = find_relationships(schema_graph, table, incoming=True)
 
     for relationship_obj in incoming_relationships:
         logger.info("Preparing multiplier {} for table {}".format(relationship_obj.identifier, table))
@@ -158,7 +159,7 @@ def prepare_single_table(schema_graph, table, path, max_distinct_vals=10000, csv
 
             distinct_vals = table_data[attribute].unique()
 
-            # 如果distinct值超过阈值就舍弃该列（会有隐患？） 
+            # ignore if len(distinct_vals)>max_distinct_vals? 
             if len(distinct_vals) > max_distinct_vals:
                 del_cat_attributes.append(rel_attribute)
                 logger.info("Ignoring column {} for table {} because "
@@ -167,8 +168,8 @@ def prepare_single_table(schema_graph, table, path, max_distinct_vals=10000, csv
             elif not table_data[attribute].notna().any():
                 del_cat_attributes.append(rel_attribute)
                 logger.info("Ignoring column {} for table {} because all values are nan".format(rel_attribute, table))
-            else: # 建立字典
-                if not table_data[attribute].isna().any(): # 没有null
+            else: # build a dictionary
+                if not table_data[attribute].isna().any(): # there is no NULL value
                     val_dict = dict(zip(distinct_vals, range(1, len(distinct_vals) + 1)))
                     val_dict[np.nan] = 0
                 else:

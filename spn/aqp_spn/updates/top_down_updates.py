@@ -35,10 +35,8 @@ def cluster_center_update_dataset_batch(spn, dataset):
         node_idx = 0 # current cluster id
 
         data_num = len(dataset)
-        min_dist = [np.inf]*data_num # scope下每条新数据到聚类中心最小的欧氏距离
-        #print("min_dist:", min_dist)
+        min_dist = [np.inf]*data_num 
         min_idx = [-1]*data_num
-        #print("min_idx:", min_idx)
 
         for n in spn.children:
             # distance calculation between the dataset and the different clusters
@@ -46,7 +44,6 @@ def cluster_center_update_dataset_batch(spn, dataset):
             # this? https://scikit-learn.org/stable/modules/generated/sklearn.metrics.pairwise_distances.html
             #
             proj = projection_batch(dataset, n.scope) # [[1, 2], [1, 2], [1, 2]]
-            #print("proj:", proj)
             for id, pro in enumerate(proj):
                 dist = distance.euclidean(cc[node_idx], pro)
                 if dist < min_dist[id]:
@@ -61,7 +58,6 @@ def cluster_center_update_dataset_batch(spn, dataset):
         for children in children_to_be_update:        
             cluster_center_update_dataset_batch(spn.children[children], dataset)
     elif isinstance(spn, Product):
-        print("update product node:")
         for n in spn.children:
             cluster_center_update_dataset_batch(n, dataset)
     else:
@@ -141,10 +137,6 @@ def projection(dataset, scope):
 def adapt_weights_batch(sum_node, selected_child_idx):
     assert isinstance(sum_node, Sum), "adapt_weights called on non Sum-node"
 
-    #print("before update:")
-    #print("sumnode.children:", sum_node.children)
-    #print("sumnode.cluster:", sum_node.weights)
-
     card = sum_node.cardinality
     from math import isclose
     cardinalities = np.array(sum_node.weights) * card
@@ -157,10 +149,6 @@ def adapt_weights_batch(sum_node, selected_child_idx):
         weight_sum = np.sum(sum_node.weights)
 
         #assert isclose(weight_sum, 1, abs_tol=0.05)
-
-    #print("updated:")
-    #print("sumnode.children:", sum_node.children)
-    #print("sumnode.cluster:", sum_node.weights)
 
 def adapt_weights(sum_node, selected_child_idx):
     assert isinstance(sum_node, Sum), "adapt_weights called on non Sum-node"
@@ -184,13 +172,8 @@ def insert_into_categorical_leaf_batch(node, data, insert_weights, debug=False):
     """
 
     relevant_updates, insert_weights = slice_relevant_updates_batch(node.scope[0], data, insert_weights)
-    #print("relevant_updates:", relevant_updates)
-    #print("insert_weights:", insert_weights)
     node.cardinality, node.p = insert_into_histogram(node.p, node.cardinality, relevant_updates, insert_weights,
                                                      debug=debug)
-    #print("node.cardinality:", node.cardinality)
-    #print("node.p:", node.p)
-
 
 def insert_into_categorical_leaf(node, data, insert_weights, debug=False):
     """
@@ -202,14 +185,9 @@ def insert_into_categorical_leaf(node, data, insert_weights, debug=False):
                                                      debug=debug)
 
 def slice_relevant_updates_batch(idx, data, insert_weights):
-    #print("idx:", idx)
-    #print("data:", data)
     relevant_updates = data[:, idx]
-    #print("relevant_updates:", relevant_updates)
     relevant_idxs = np.where(insert_weights > 0)
-    #print('relevant_idxs:', relevant_idxs)
     insert_weights = insert_weights[relevant_idxs]
-    #print("insert_weights:", insert_weights)
 
     relevant_updates = relevant_updates[relevant_idxs]
 
@@ -246,24 +224,15 @@ def insert_into_histogram(p, cardinality, relevant_updates_histogram, insert_wei
 
 def insert_into_identity_numeric_leaf_batch(node, data, insert_weights, debug=False):
     relevant_updates, insert_weights = slice_relevant_updates_batch(node.scope[0], data, insert_weights)
-    #print("relevant_updates:", relevant_updates)
-    #print("insert_weights:", insert_weights)
-
-    #print("old_p:", node.return_histogram())
     # update unique value domain
     p = update_unique_vals(node, relevant_updates)
-    #print("old p:", p)
-    #print("old card:", node.cardinality)
 
     # treat this as updating a histogram
     # however, we have plain unique values not idxs of histogram
     relevant_updates_histogram = np.array(
         [node.unique_vals_idx[relevant_updates[i]] for i in range(relevant_updates.shape[0])])
-    #print("relevant_updates_histogram:", relevant_updates_histogram)
 
     node.cardinality, p = insert_into_histogram(p, node.cardinality, relevant_updates_histogram, insert_weights, debug=debug)
-    #print("new p:", p)
-    #print("new cardinality:", node.cardinality)
 
     node.update_from_new_probabilities(p)
 

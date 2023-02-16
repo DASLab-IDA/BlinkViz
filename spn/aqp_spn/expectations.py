@@ -64,7 +64,6 @@ def expectation(spn, feature_scope, inverted_features, ranges, node_expectation=
                 [[expectation_recursive(spn, feature_scope, inverted_features, relevant_scope, evidence,
                                         node_expectation, node_likelihoods)]])
     # full batch version
-    print("expectation aqp_spn used")
     return expectation_recursive_batch(spn, feature_scope, inverted_features, relevant_scope, evidence,
                                        node_expectation, node_likelihoods)
 

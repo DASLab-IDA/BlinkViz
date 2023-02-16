@@ -1,45 +1,5 @@
 from ensemble_compilation.graph_representation import SchemaGraph, Table
 
-def gen_flights_500M_stratified_1_schema(csv_path):
-    schema = gen_flights_10M_schema(csv_path)
-
-    schema.table_dictionary['flights'].sample_rate = 0.01
-    schema.table_dictionary['flights'].table_size = 4998262
-
-    return schema    
-
-def gen_flights_500M_stratified_2_schema(csv_path):
-    schema = gen_flights_10M_schema(csv_path)
-
-    schema.table_dictionary['flights'].sample_rate = 0.01
-    schema.table_dictionary['flights'].table_size = 4441935
-
-    return schema    
-
-def gen_flights_500M_stratified_3_schema(csv_path):
-    schema = gen_flights_10M_schema(csv_path)
-
-    schema.table_dictionary['flights'].sample_rate = 0.01
-    schema.table_dictionary['flights'].table_size = 3954763
-
-    return schema    
-
-def gen_flights_50M_partition_schema(csv_path):
-    schema = gen_flights_10M_schema(csv_path)
-
-    schema.table_dictionary['flights'].sample_rate = 1
-    schema.table_dictionary['flights'].table_size = 10000000
-
-    return schema
-
-def gen_flights_500M_partition_schema(csv_path):
-    schema = gen_flights_10M_schema(csv_path)
-
-    schema.table_dictionary['flights'].sample_rate = 1
-    schema.table_dictionary['flights'].table_size = 100000000
-
-    return schema
-
 def gen_flights_5B_schema(csv_path):
     schema = gen_flights_10M_schema(csv_path)
 
@@ -114,13 +74,6 @@ def gen_flights_50M_schema(csv_path):
 
     return schema
 
-def gen_flights_500M_not_sampled_schema(csv_path):
-    schema = gen_flights_10M_schema(csv_path)
-
-    schema.table_dictionary['flights'].sample_rate = 1
-    schema.table_dictionary['flights'].table_size = 500000000
-
-    return schema
 
 def gen_flights_500M_schema(csv_path):
     schema = gen_flights_10M_schema(csv_path)

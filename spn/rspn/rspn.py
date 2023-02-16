@@ -59,17 +59,14 @@ def build_ds_context(column_names, meta_types, null_values, table_meta_data, no_
             min_val = np.nanmin(train_data[:, col])
             max_val = np.nanmax(train_data[:, col])
             domain.append([min_val, max_val])
-            print("domain1:", domain)
         elif feature_meta_type == MetaType.DISCRETE:
             # if no metadata is given, infer domains from data
             if column_names is not None \
                     and unified_column_dictionary.get(column_names[col]) is not None:
                 no_diff_values = len(unified_column_dictionary[column_names[col]].keys())
                 domain.append(np.arange(0, no_diff_values + 1, 1))
-                print("domain2:", domain)
             else:
                 domain.append(np.arange(domain_values[0], domain_values[1] + 1, 1))
-                print("domain3:", domain)
         else:
             raise Exception("Unkown MetaType " + str(meta_types[col]))
 
@@ -146,7 +143,6 @@ class RSPN:
         e.g. np.array([NominalRange([0]), NumericRange([[0,0.3]]), None])
         """
 
-        print("prob once")
         return self._indicator_expectation(medium_file, [], range_conditions=range_conditions)
 
     def _indicator_expectation(self, medium_file, feature_scope, identity_leaf_expectation=None, inverted_features=None,
@@ -162,7 +158,6 @@ class RSPN:
         groups. However, this works equally well and is faster.
         """
 
-        print("_indicator_expectation - feature_scope:", feature_scope)
         if inverted_features is None:
             inverted_features = [False] * len(feature_scope)
 
@@ -188,7 +183,6 @@ class RSPN:
             full_result = expectation(medium_file, self.mspn, feature_scope, inverted_features, range_conditions,
                                       node_expectation=_node_expectation, node_likelihoods=_node_likelihoods_range)
 
-        print("rspn._indicator_expectation full_result:", full_result)
         return full_result
 
     def _augment_not_null_conditions(self, feature_scope, range_conditions):
@@ -272,23 +266,10 @@ class RSPN:
                     unnormalized_exp[np.where(p != 0)[0]] / p[np.where(p != 0)[0]])
                 result = unnormalized_exp / p
                 result[np.where(p == 0)[0]] = impute_val
-                print("avg impute_p")
                 return result
-            print("avg result again")
             return self._indicator_expectation(medium_file,feature_scope, inverted_features=inverted_features,
                                                gen_code_stats=gen_code_stats)
 
-        #ue_file = medium_file + "/unnormalized_exp.pkl"
-        #with open(ue_file,'rb+') as f:
-        #    pickle.dump(unnormalized_exp, ue_file, pickle.HIGHEST_PROTOCOL)
-        print("rspn._unnormalized_conditional_expectation unnormalized_exp:", unnormalized_exp)
-
-        print("rspn._unnormalized_conditional_expectation p:", p)
-
-        #ue_file = medium_file + "/unnormalized_exp.pkl"
-        #with open(ue_file,'rb+') as f:
-        #    pickle.dump(unnormalized_exp, ue_file, pickle.HIGHEST_PROTOCOL)
-        print("avg one pass")
         return unnormalized_exp / p
 
     def _unnormalized_conditional_expectation_with_std(self, medium_file, feature_scope, inverted_features=None,
@@ -338,15 +319,12 @@ class RSPN:
         # If normalization is not required, simply return unnormalized conditional expectation
         
         if normalizing_scope is None or len(normalizing_scope) == 0:
-            print("normalizing not needed")
             if standard_deviations:
-                print("normalizing std")
                 return self._unnormalized_conditional_expectation_with_std(medium_file, feature_scope,
                                                                            inverted_features=inverted_features,
                                                                            range_conditions=range_conditions,
                                                                            gen_code_stats=gen_code_stats)
             else:
-                print("normalizing no std")
                 return None, self._unnormalized_conditional_expectation(medium_file, feature_scope,
                                                                         inverted_features=inverted_features,
                                                                         range_conditions=range_conditions,
@@ -362,7 +340,6 @@ class RSPN:
         # E[1_{conditions} * X_feature_scope]
         std = None
         if standard_deviations:
-            print("normalizing std again")
             std, _ = self._unnormalized_conditional_expectation_with_std(medium_file, feature_scope,
                                                                          inverted_features=inverted_features,
                                                                          range_conditions=range_conditions,
@@ -372,7 +349,6 @@ class RSPN:
                                                 inverted_features=inverted_features,
                                                 range_conditions=range_conditions,
                                                 gen_code_stats=gen_code_stats)
-        print("normalizing again")
 
         # E[1_{conditions} * X_normalizing_scope]
         inverted_features_of_norm = \

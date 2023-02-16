@@ -85,13 +85,11 @@ class CombineSPN:
         """Compute conditions for E(1/multiplier * 1_{c_1 Λ… Λc_n}) (Application A)."""
 
         condition_dict = query.table_where_condition_dict
-        print("relevant_conditions - condition_dict:", condition_dict)
         conditions = []
 
         if merged_tables is None:
             merged_tables = query.table_set.intersection(self.table_set)
 
-        print("relevant_conditions - merged_tables:", merged_tables)
         # Conditions from Query
         for table in condition_dict.keys():
             if table in merged_tables:
@@ -104,8 +102,6 @@ class CombineSPN:
             table_obj = self.schema_graph.table_dictionary[table]
             condition = table_obj.table_nn_attribute + ' IS NOT NULL'
             conditions.append((table, condition))
-
-        print("relevant_conditions - conditions:", conditions)
 
         return conditions
 
@@ -234,15 +230,6 @@ def read_ensemble(ensemble_locations, build_reverse_dict=False):
                     _build_reverse_spn_dict(spn)
                 ensemble.add_spn(spn)
 
-    """
-    def print_info(node):
-        print("print_info - node:", node)
-        print("print_info - node.scope:", node.scope)
-    node_print = {Leaf: print_info}
-    node_print.update({Sum: print_info, Product: print_info})
-    for spn in ensemble.spns:
-        result = eval_spn_top_down(spn, node_print)
-    """
     return ensemble
 
 
@@ -339,7 +326,6 @@ def evaluate_factors_group_by(medium_path, medium_file, artificially_added_condi
     factors = [factor for factor in factors_full if factor not in factors_to_be_deleted]
     factor_values = [factor_value for i, factor_value in enumerate(factor_values_full) if
                      not factors_full[i] in factors_to_be_deleted]
-    print("evaluate_factors_group_by - factors:", factors[0])
 
     card_start_t = perf_counter()
     # evaluate factors to obtain cardinality and formula
@@ -384,15 +370,12 @@ def evaluate_factors_group_by(medium_path, medium_file, artificially_added_condi
                 if artificially_added_condition in factor.conditions:
                     factor.conditions.remove(artificially_added_condition)
                     specific_group_by_scopes.append(group_idx)
-            print("evaluate_factors_group_by - specific_group_by_scopes:", specific_group_by_scopes)
             # factor has to be recomputed for different group by scopes
             if len(specific_group_by_scopes) > 0:
                 specific_technical_group_by_scopes = [technical_group_by_scopes[i] for i in
                                                       specific_group_by_scopes]
-                print("evaluate_factors_group_by - specific_technical_group_by_scopes:", specific_technical_group_by_scopes)
                 specific_result_tuples = [project_tuple(result_tuple, specific_group_by_scopes) for result_tuple in
                                           result_tuples]
-                print("evaluate_factors_group_by - specific_result_tuples:", specific_result_tuples)
                 # remember which unique projected values appeared and store them in order
                 different_specific_result_tuples = []
                 specific_result_dict = dict()
@@ -402,14 +385,11 @@ def evaluate_factors_group_by(medium_path, medium_file, artificially_added_condi
                 different_specific_result_tuples_as_list = [project_list_tuple(result_tuple) for result_tuple in
                                                             different_specific_result_tuples]
 
-                print("evaluate_factors_group_by - defferent_specific_result_tuples_as_list:", different_specific_result_tuples_as_list)
-
                 _, unprojected_exps = \
                     factor.spn.evaluate_indicator_expectation_batch(medium_file, factor,
                                                                     specific_technical_group_by_scopes,
                                                                     different_specific_result_tuples_as_list,
                                                                     standard_deviations=False)
-                print("evaluate_factors_group_by - unprojected_exps:", unprojected_exps)
                 # 保存每个result跟result_tuple的对应关系
                 result_medium_dict = {}
                 exps = np.ones((len(result_tuples), 1))
@@ -420,18 +400,8 @@ def evaluate_factors_group_by(medium_path, medium_file, artificially_added_condi
                     result_medium_dict[unprojected_idx] = idx
 
                     exps[idx] = unprojected_exps[unprojected_idx]
-                
-                with open(medium_path+"/projection.txt", 'a+') as proj_file:
-                    proj_file.write(medium_file)
-                    proj_file.write('\n')
-                    proj_file.write(str(result_medium_dict))
-                    proj_file.write('\n')
-                #with open(medium_file,'a+') as status_file:
-                #    status_file.write(str(result_medium_dict))
-                    #pickle.dump(result_medium_dict, status_file, pickle.HIGHEST_PROTOCOL)
-                print("evaluate_factors_group_by - exps:", exps)
+            
                 cardinalities *= exps
-                print("evaluate_factors_group_by - cardinalities:", cardinalities)
                 if confidence_intervals:
                     factor_exps[:, 1] *= np.reshape(exps, len(result_tuples))
 
@@ -441,7 +411,6 @@ def evaluate_factors_group_by(medium_path, medium_file, artificially_added_condi
 
             else:
                 cardinalities *= factor_values[i]
-                print("evaluate_factors_group_by - cardinalities:", cardinalities)
 
         elif isinstance(factor, Expectation):
             for artificially_added_condition in artificially_added_conditions:
@@ -450,7 +419,6 @@ def evaluate_factors_group_by(medium_path, medium_file, artificially_added_condi
 
             stds, exps = factor.spn.evaluate_expectation_batch(medium_file, factor, technical_group_by_scopes, result_tuples,
                                                                standard_deviations=confidence_intervals)
-            print("evaluate_factors_group_by - cardinalities:", cardinalities)
             cardinalities = np.multiply(exps, cardinalities)
             if confidence_intervals:
                 ci_index = exps_counter + 2
@@ -477,8 +445,6 @@ def evaluate_factors_group_by(medium_path, medium_file, artificially_added_condi
     if debug:
         logger.debug(f"\t\tcomputed all cardinalities in {card_end_t - card_start_t} secs.")
     logger.debug(f"\t\taverage_cardinality: {cardinalities.mean()}")
-
-    print("evaluate_factors_group_by - cardinalities:", cardinalities)
 
     return cardinality_stds, cardinalities
 
@@ -687,7 +653,6 @@ class SPNEnsemble:
             # search for spn with maximal matching where conditions
             # 寻找能覆盖最多where条件的SPN
             for spn in self.spns: # 遍历所有SPN
-                print("spn:", spn)
                 potential_group_by_columns = set(spn.column_names) # 当前SPN的所有列都视为potential group by columns
                 for table in spn.table_set: # 当前SPN包括的表的集合
                     potential_group_by_columns = potential_group_by_columns.union(
@@ -754,14 +719,6 @@ class SPNEnsemble:
         result_tuples_translated = [tuple([result_tuple[i] for i in group_by_permutation]) for result_tuple in
                                     result_tuples_translated]
 
-        #print("spn_ensemble._evaluate_group_by_spn_ensemble group_bys_scopes: ", group_bys_scopes)
-        #print("spn_ensemble._evaluate_group_by_spn_ensemble result_tuples: ", result_tuples)
-        #print("spn_ensemble._evaluate_group_by_spn_ensemble result_tuples_translated: ", result_tuples_translated)
-
-        #with open("/home/qym/blinkviz/deepdb/flights-benchmark/ensemble_learning/test/eval_tmp.txt","a+") as eval_file:
-        #    eval_file.write("result_tuples_translated:\n")
-        #    eval_file.write(str(result_tuples_translated))
-        #    eval_file.write("\n")
         return group_bys_scopes, result_tuples, result_tuples_translated
 
     # def predict(self, conditions, regression_column):
@@ -828,26 +785,16 @@ class SPNEnsemble:
             if debug:
                 logger.debug(f"\t\tcomputed {len(result_tuples)} group by statements "
                              f"in {group_by_end_t - group_by_start_t} secs.")
-            print("spn_ensemble - evaluate_query - technical_group_by_scopes:", technical_group_by_scopes)
-            print("spn_ensemble - evaluate_query - group_bys_scopes:", group_bys_scopes)
-            print("spn_ensemble - evaluate_query - result_tuples:", result_tuples)
-            print("spn_ensemble - evaluate_query - result_tuples_translated:", result_tuples_translated)
-
         # 如果是基数估计，直接返回结果
         # if cardinality query simply return it COUNT/SUM
         if query.query_type == QueryType.CARDINALITY or any(
                 [aggregation_type == AggregationType.SUM or aggregation_type == AggregationType.COUNT
                  for _, aggregation_type, _ in query.aggregation_operations]):
-            medium_file = medium_path+"/count_status" + str(query_no) + ".pkl"
-
-            print("spn_ensemble - evaluate_query -  simply return cardinality estimation:", query.query_type, query.aggregation_operations, query.group_bys)
             prot_card_start_t = perf_counter()
 
             # First get the prototypical factors for concrete group by tuple
             prototype_query = copy.deepcopy(query) # copy了一个query对象
             artificially_added_conditions = []
-            #print("spn_ensemble - evaluate_query - result_tuples_translated:", result_tuples_translated)
-            #print("spn_ensemble - evaluate_query - query.group_bys:", query.group_bys)
             
             # If result=0, return
             """
@@ -862,7 +809,6 @@ class SPNEnsemble:
                 condition = attribute + '=' + str(result_tuples_translated[0][group_by_idx])
                 artificially_added_conditions.append((table, condition,))
                 prototype_query.add_where_condition(table, condition)
-                print("spn_ensemble - evaluate_query - prototype_query.table_where_condition_dict:", prototype_query.table_where_condition_dict)
             # 先把prototype_query扔进去predict一个结果
             _, factors, cardinalities, factor_values = self.cardinality(medium_file, prototype_query,
                                                                         rdc_spn_selection=rdc_spn_selection,
@@ -873,11 +819,6 @@ class SPNEnsemble:
                                                                         exploit_overlapping=exploit_overlapping,
                                                                         return_factor_values=True,
                                                                         exploit_incoming_multipliers=exploit_incoming_multipliers)
-            print("spn_ensemble - cardinality return - prototype_query:", prototype_query.table_where_condition_dict)
-            print("spn_ensemble - cardinality return - factors:", factors)
-            print("spn_ensemble - cardinality return - cardinalities:", cardinalities)
-            print("spn_ensemble - cardinality return - factor_values:", factor_values)
-            print("line 796 cardinalities:", cardinalities)
             prot_card_end_t = perf_counter()
             if debug:
                 if len(query.group_bys) == 0:
@@ -904,7 +845,7 @@ class SPNEnsemble:
                     artificially_added_conditions, False,
                     debug, factor_values, factors, result_tuples,
                     technical_group_by_scopes)
-                print("line 818 cardinalities:", cardinalities)
+               
                 if confidence_intervals:
                     _, factors_no_overlap, _, factor_values_no_overlap = self.cardinality(medium_file,prototype_query,
                                                                                           rdc_spn_selection=rdc_spn_selection,
@@ -948,7 +889,6 @@ class SPNEnsemble:
         if query.query_type == QueryType.CARDINALITY:
             if confidence_intervals:
                 return build_confidence_interval(cardinalities, cardinality_stds), cardinalities
-            print("line 818 None")
             return None, cardinalities
 
         result_values = None

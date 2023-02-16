@@ -29,7 +29,6 @@ class AQPSPN(CombineSPN, RSPN):
         RSPN.__init__(self, meta_types, null_values, full_sample_size,
                       column_names=column_names,
                       table_meta_data=table_meta_data)
-        print("AQPSPN meta_types:", meta_types)
 
     def add_dataset(self, dataset):
         """
@@ -117,7 +116,7 @@ class AQPSPN(CombineSPN, RSPN):
                                        gen_code_stats=None):
         """
         Evaluates indicator expectation.
-        :param indicator_expectation: 一个对象
+        :param indicator_expectation: 
         :return:
         """
         return self.evaluate_indicator_expectation_batch(medium_file, indicator_expectation, None, None,
@@ -133,17 +132,11 @@ class AQPSPN(CombineSPN, RSPN):
         """
 
         def postprocess_exps(expectation, exp_values):
-            #print("aqp_spn.postprocess_exps expectation:", expectation)
-            #print("aqp_spn.postprocess_exps exp_values:", exp_values)
             exp_values = np.clip(exp_values, expectation.min_val, np.inf)
             if group_bys is None or group_bys == []:
                 return exp_values.item()
             else:
                 return exp_values.reshape(len(group_by_tuples), 1)
-
-
-        # print("aqp_spn.evaluate_expectation_batch group_bys:", group_bys)
-        # print("aqp_spn.evaluate_expectation_batch group_by_tuples:", group_by_tuples)
 
         features = []
         inverted_features = []
@@ -164,10 +157,6 @@ class AQPSPN(CombineSPN, RSPN):
             normalizing_scope.append(index)
             inverted_features.append(True)
 
-        # exp_values是最终的均值结果
-        print("aqp_spn.evaluate_expectation_batch features:", features)
-        #print("aqp_spn.evaluate_expectation_batch normalizing_scope:", normalizing_scope)
-        #print("aqp_spn.evaluate_expectation_batch range_conditions:", range_conditions)
         std_values, exp_values = \
             self._normalized_conditional_expectation(medium_file, features, inverted_features=inverted_features,
                                                      normalizing_scope=normalizing_scope,
@@ -181,9 +170,7 @@ class AQPSPN(CombineSPN, RSPN):
             else:
                 std_values = std_values.reshape(len(group_by_tuples), 1)
 
-        #print("aqp_spn.std_values:", std_values)
         result = postprocess_exps(expectation, exp_values)
-        print("evaluate_expectation_batch - result:", result)
         return std_values, result
 
     def evaluate_indicator_expectation_batch(self, medium_file, indicator_expectation, group_bys, group_by_tuples,
@@ -204,8 +191,6 @@ class AQPSPN(CombineSPN, RSPN):
             return all(isclose)
 
         def postprocess_exps(medium_file, indicator_expectation, features, exp_values, std_values):
-            print("postprocess_exps - features:", features)
-            print("postprocess_exps - exp_values:", exp_values)
             # if indicator expectation has zero probability, split up
             if isclosetozero(exp_values) and \
                     indicator_expectation.nominator_multipliers is not None \
@@ -244,7 +229,6 @@ class AQPSPN(CombineSPN, RSPN):
         inverted_features = []
         range_conditions = self._parse_conditions(indicator_expectation.conditions, group_by_columns=group_bys,
                                                   group_by_tuples=group_by_tuples)
-        print("evaluate_indicator_expectation_batch - range_conditions:", range_conditions)
         for (table, multiplier) in indicator_expectation.nominator_multipliers:
             # title.mul_movie_info_idx.movie_id_nn
             features.append(self.column_names.index(table + '.' + multiplier))
@@ -258,21 +242,17 @@ class AQPSPN(CombineSPN, RSPN):
                                                                           range_conditions=range_conditions)
 
             result = postprocess_exps(medium_file, indicator_expectation, features, exp_values, std_values)
-            print("evaluate_indicator_expectation_batch - result1:", result)
             return result
 
         exp_values = self._indicator_expectation(medium_file, features, inverted_features=inverted_features,
                                                  range_conditions=range_conditions, gen_code_stats=gen_code_stats)
         result = postprocess_exps(medium_file, indicator_expectation, features, exp_values, None)
-        print("evaluate_indicator_expectation_batch - result2:", result)
         return result
 
     # 获取result tuples
     def evaluate_group_by_combinations(self, features, range_conditions=None):
-        print("evaluate_group_by_combinations - features:", features)
         if range_conditions is not None:
             range_conditions = self._parse_conditions(range_conditions) # condition的内容还要看下
-            print("aqp_spn - range_conditions:", range_conditions)
         feature_scope = []
         replaced_features = []
         # check if group by attribute is in relevant attributes, could also be omitted because of FD redundancy
@@ -310,8 +290,6 @@ class AQPSPN(CombineSPN, RSPN):
             return [self.column_names[feature] for feature in feature_scope], None, None
         group_bys = list(group_bys)
         group_bys_translated = group_bys
-        print("evaluate_group_by_combinations - scope:", scope)
-        print("evaluate_group_by_combinations - group_bys:", group_bys_translated)
 
         # replace by alternative, i.e. replace by real categorical values or replace by categorical value of top
         # fd attribute
@@ -369,8 +347,6 @@ class AQPSPN(CombineSPN, RSPN):
         group_bys_translated = list(unique_group_bys.keys())
         group_bys = [unique_group_bys[k] for k in group_bys_translated]
 
-        print("evaluate_group_by_combinations - group_bys:", group_bys)
-        print("evaluate_group_by_combinations - group_bys_tranlated:", group_bys_translated)
         return [self.column_names[feature] for feature in feature_scope], group_bys, group_bys_translated
 
     def _group_by_combinations(self, feature_scope, range_conditions=None):
@@ -380,7 +356,6 @@ class AQPSPN(CombineSPN, RSPN):
         :param range_conditions:  e.g. np.array([NominalRange([0]), NumericRange([[0,0.3]]), None])
         """
 
-        print("_group_by_combinations - feature_scope:", feature_scope)
         if range_conditions is None:
             range_conditions = np.array([None] * len(self.mspn.scope)).reshape(1, len(self.mspn.scope))
         else:
