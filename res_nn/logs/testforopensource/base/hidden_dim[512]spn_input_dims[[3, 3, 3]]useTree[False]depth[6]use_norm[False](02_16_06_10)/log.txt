@@ -1,0 +1,37 @@
+2023-02-16 06:10:06.449 | INFO     | __main__:<module>:119 - base:
+  count: False
+  critical_params: ['hidden_dim', 'spn_input_dims', 'useTree', 'depth', 'use_norm']
+  crop: 3
+  depth: 6
+  device: cuda
+  hidden_dim: 512
+  res_mlp: True
+  spn_input_dims: [3, 3, 3]
+  test_data_dir: /home/qym/datasets/training_data_count_3model.pkl
+  training_data_dir: /home/qym/datasets/training_data_count_3model.pkl
+  useMul: False
+  useTree: False
+  use_norm: False
+  zero_debug: False
+batch_size: 400
+critical_params: []
+device: cuda:0
+log_dir: logs/testforopensource/base/hidden_dim[512]spn_input_dims[[3, 3, 3]]useTree[False]depth[6]use_norm[False](02_16_06_10)
+mixed_precision: False
+model: base
+name: testforopensource
+restore_ckpt: /home/qym/spn_ensemble/logs/resd6h512i10w_update1/base/hidden_dim[512]spn_input_dims[[3, 3, 3]]useTree[False]depth[6]use_norm[False](02_09_11_36)/final.pth
+spn_input_dims: [3, 3, 3]
+suffix: 
+sum_freq: 100
+trainer:
+  adamw_decay: 0.0001
+  anneal_strategy: linear
+  canonical_lr: 2.5e-05
+  clip: 1
+  epsilon: 1e-08
+  num_steps: 100000
+  optimizer: adamw
+  scheduler: OneCycleLR
+val_freq: 50000
+2023-02-16 06:10:09.382 | INFO     | __main__:train:52 - Parameter Count: 7823617

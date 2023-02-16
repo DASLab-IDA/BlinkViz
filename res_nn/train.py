@@ -69,8 +69,6 @@ def train(cfg):
     while should_keep_training:
 
         for i_batch, data_blob in enumerate(train_loader):
-            #print(i_batch)
-            #print(len(data_blob))
             optimizer.zero_grad()
             spn_values, spn_preds, gt = [x.to(cfg.device) for x in data_blob]          
             output = {}

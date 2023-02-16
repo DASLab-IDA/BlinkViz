@@ -10,12 +10,6 @@ def L1Loss(preds, gt):
 
     return loss, metrics
 
-'''
-def unnormalize_torch(vals, min_val, max_val):
-    vals = (vals * (max_val - min_val)) + min_val
-    return torch.exp(vals)
-'''
-
 def qerrorLoss(preds, gt):
     qerror = []
     if (preds>gt).cpu().data.numpy()[0]:
@@ -27,21 +21,3 @@ def qerrorLoss(preds, gt):
         'qerror': torch.mean(torch.cat(qerror)).item(),
     }
     return torch.mean(torch.cat(qerror)), metrics
-
-'''
-def qerrorLoss(preds, targets, min_val, max_val):
-    qerror = []
-    preds = unnormalize_torch(preds, min_val, max_val)
-    targets = unnormalize_torch(targets, min_val, max_val)
-
-    for i in range(len(targets)):
-        if (preds[i] > targets[i]).cpu().data.numpy()[0]:
-            qerror.append(preds[i] / targets[i])
-        else:
-            qerror.append(targets[i] / preds[i])
-        
-    metrics = {
-        'q-error loss': qerror
-    }
-    return torch.mean(torch.cat(qerror))
-'''

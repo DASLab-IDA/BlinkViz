@@ -9,9 +9,6 @@ _CN.val_freq = 50000
 _CN.critical_params = []
 _CN.mixed_precision = False
 
-_CN.training_data_dir = "/home/qym/datasets/training_data_count_3model.pkl"
-_CN.test_data_dir = "/home/qym/datasets/training_data_count_3model.pkl"
-
 _CN.restore_ckpt = "/home/qym/spn_ensemble/logs/resd6h512i10w_update1/base/hidden_dim[512]spn_input_dims[[3, 3, 3]]useTree[False]depth[6]use_norm[False](02_09_11_36)/final.pth"
 #_CN.restore_ckpt = None
 
@@ -41,6 +38,8 @@ _CN.base.critical_params = ["hidden_dim", "spn_input_dims", "useTree", "depth", 
 _CN.base.zero_debug = False
 _CN.base.res_mlp = True
 #_CN.base.dataset_batch = "/home/qym/datasets/testSetCount_norm_1000-mean_crop3.pkl"
+_CN.base.training_data_dir = "/home/qym/datasets/training_data_count_3model.pkl"
+_CN.base.test_data_dir = "/home/qym/datasets/training_data_count_3model.pkl"
 
 ### TRAINER
 _CN.trainer = CN()
