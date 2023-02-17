@@ -67,7 +67,6 @@ if __name__ == '__main__':
     parser.add_argument('--evaluate_cardinalities_scale', help='Evaluates SPN ensemble to compute cardinalities',
                         action='store_true')
     parser.add_argument('--evaluate_aqp_queries', help='Evaluates SPN ensemble for AQP', action='store_true')
-    parser.add_argument('--medium_path', help='Store medium data', default='./models')
     parser.add_argument('--against_ground_truth', help='Computes ground truth for AQP', action='store_true')
     parser.add_argument('--evaluate_confidence_intervals',
                         help='Evaluates SPN ensemble and compares stds with true stds', action='store_true')
@@ -218,7 +217,7 @@ if __name__ == '__main__':
     if args.evaluate_aqp_queries:
         from evaluation.aqp_evaluation import evaluate_aqp_queries
 
-        evaluate_aqp_queries(args.medium_path, args.ensemble_location, args.query_file_location, args.target_path, schema,
+        evaluate_aqp_queries(args.ensemble_location, args.query_file_location, args.target_path, schema,
                              args.ground_truth_file_location, args.rdc_spn_selection, args.pairwise_rdc_path,
                              max_variants=args.max_variants,
                              merge_indicator_exp=args.merge_indicator_exp,

@@ -136,16 +136,16 @@ class RSPN:
 
         return range_conditions
 
-    def _probability(self, medium_file, range_conditions):
+    def _probability(self, range_conditions):
         """
         Compute probability of range conditions.
 
         e.g. np.array([NominalRange([0]), NumericRange([[0,0.3]]), None])
         """
 
-        return self._indicator_expectation(medium_file, [], range_conditions=range_conditions)
+        return self._indicator_expectation([], range_conditions=range_conditions)
 
-    def _indicator_expectation(self, medium_file, feature_scope, identity_leaf_expectation=None, inverted_features=None,
+    def _indicator_expectation(self, feature_scope, identity_leaf_expectation=None, inverted_features=None,
                                range_conditions=None, force_no_generated=False, gen_code_stats=None):
         """
         Compute E[1_{conditions} * X_feature_scope]. Can also compute products (specify multiple feature scopes).
@@ -175,12 +175,12 @@ class RSPN:
                                    Categorical: categorical_likelihood_range}
                                    
         if hasattr(self, 'use_generated_code') and self.use_generated_code and not force_no_generated:
-            full_result = expectation(medium_file, self.mspn, feature_scope, inverted_features, range_conditions,
+            full_result = expectation(self.mspn, feature_scope, inverted_features, range_conditions,
                                       node_expectation=_node_expectation, node_likelihoods=_node_likelihoods_range,
                                       use_generated_code=True, spn_id=self.id, meta_types=self.meta_types,
                                       gen_code_stats=gen_code_stats)
         else:
-            full_result = expectation(medium_file, self.mspn, feature_scope, inverted_features, range_conditions,
+            full_result = expectation(self.mspn, feature_scope, inverted_features, range_conditions,
                                       node_expectation=_node_expectation, node_likelihoods=_node_likelihoods_range)
 
         return full_result
@@ -213,26 +213,26 @@ class RSPN:
 
         return range_conditions
 
-    def _indicator_expectation_with_std(self, medium_file, feature_scope, inverted_features=None,
+    def _indicator_expectation_with_std(self, feature_scope, inverted_features=None,
                                         range_conditions=None):
         """
         Computes standard deviation of the estimator for 1_{conditions}*X_feature_scope. Uses the identity
         V(X)=E(X^2)-E(X)^2.
         :return:
         """
-        e_x = self._indicator_expectation(medium_file, feature_scope, identity_leaf_expectation=identity_expectation,
+        e_x = self._indicator_expectation(feature_scope, identity_leaf_expectation=identity_expectation,
                                           inverted_features=inverted_features,
                                           range_conditions=range_conditions)
 
         not_null_conditions = self._augment_not_null_conditions(feature_scope, None)
-        n = self._probability(medium_file, not_null_conditions) * self.full_sample_size
+        n = self._probability(not_null_conditions) * self.full_sample_size
 
         # shortcut: use binomial std if it is just a probability
         if len(feature_scope) == 0:
             std = np.sqrt(e_x * (1 - e_x) * 1 / n)
             return std, e_x
 
-        e_x_sq = self._indicator_expectation(medium_file, feature_scope,
+        e_x_sq = self._indicator_expectation(feature_scope,
                                              identity_leaf_expectation=partial(identity_expectation, power=2),
                                              inverted_features=inverted_features,
                                              range_conditions=range_conditions,
@@ -245,7 +245,7 @@ class RSPN:
 
         return std, e_x
 
-    def _unnormalized_conditional_expectation(self, medium_file, feature_scope, inverted_features=None, range_conditions=None,
+    def _unnormalized_conditional_expectation(self, feature_scope, inverted_features=None, range_conditions=None,
                                               impute_p=False, gen_code_stats=None):
         """
         Compute conditional expectation. Can also compute products (specify multiple feature scopes).
@@ -254,12 +254,12 @@ class RSPN:
 
         range_conditions = self._augment_not_null_conditions(feature_scope, range_conditions)
         # avg case1
-        unnormalized_exp = self._indicator_expectation(medium_file, feature_scope, inverted_features=inverted_features,
+        unnormalized_exp = self._indicator_expectation(feature_scope, inverted_features=inverted_features,
                                                        range_conditions=range_conditions, gen_code_stats=gen_code_stats)
 
         # print("rspn._unnormalized_conditional_expectation range_conditions:", range_conditions)
 
-        p = self._probability(medium_file, range_conditions)
+        p = self._probability(range_conditions)
         if any(p == 0):
             if impute_p:
                 impute_val = np.mean(
@@ -267,28 +267,28 @@ class RSPN:
                 result = unnormalized_exp / p
                 result[np.where(p == 0)[0]] = impute_val
                 return result
-            return self._indicator_expectation(medium_file,feature_scope, inverted_features=inverted_features,
+            return self._indicator_expectation(feature_scope, inverted_features=inverted_features,
                                                gen_code_stats=gen_code_stats)
 
         return unnormalized_exp / p
 
-    def _unnormalized_conditional_expectation_with_std(self, medium_file, feature_scope, inverted_features=None,
+    def _unnormalized_conditional_expectation_with_std(self, feature_scope, inverted_features=None,
                                                        range_conditions=None, gen_code_stats=None):
         """
         Compute conditional expectation. Can also compute products (specify multiple feature scopes).
         For inverted features 1/val is used. Normalization is not possible here.
         """
         range_conditions = self._augment_not_null_conditions(feature_scope, range_conditions)
-        p = self._probability(medium_file, range_conditions)
+        p = self._probability(range_conditions)
 
-        e_x_sq = self._indicator_expectation(medium_file, feature_scope,
+        e_x_sq = self._indicator_expectation(feature_scope,
                                              identity_leaf_expectation=partial(identity_expectation, power=2),
                                              inverted_features=inverted_features,
                                              range_conditions=range_conditions,
                                              force_no_generated=True,
                                              gen_code_stats=gen_code_stats) / p
 
-        e_x = self._indicator_expectation(medium_file, feature_scope, inverted_features=inverted_features,
+        e_x = self._indicator_expectation(feature_scope, inverted_features=inverted_features,
                                           range_conditions=range_conditions,
                                           gen_code_stats=gen_code_stats) / p
 
@@ -299,7 +299,7 @@ class RSPN:
 
         return std, e_x
 
-    def _normalized_conditional_expectation(self, medium_file, feature_scope, inverted_features=None, normalizing_scope=None,
+    def _normalized_conditional_expectation(self, feature_scope, inverted_features=None, normalizing_scope=None,
                                             range_conditions=None, standard_deviations=False, impute_p=False,
                                             gen_code_stats=None):
         """
@@ -320,12 +320,12 @@ class RSPN:
         
         if normalizing_scope is None or len(normalizing_scope) == 0:
             if standard_deviations:
-                return self._unnormalized_conditional_expectation_with_std(medium_file, feature_scope,
+                return self._unnormalized_conditional_expectation_with_std(feature_scope,
                                                                            inverted_features=inverted_features,
                                                                            range_conditions=range_conditions,
                                                                            gen_code_stats=gen_code_stats)
             else:
-                return None, self._unnormalized_conditional_expectation(medium_file, feature_scope,
+                return None, self._unnormalized_conditional_expectation(feature_scope,
                                                                         inverted_features=inverted_features,
                                                                         range_conditions=range_conditions,
                                                                         impute_p=impute_p,
@@ -340,12 +340,12 @@ class RSPN:
         # E[1_{conditions} * X_feature_scope]
         std = None
         if standard_deviations:
-            std, _ = self._unnormalized_conditional_expectation_with_std(medium_file, feature_scope,
+            std, _ = self._unnormalized_conditional_expectation_with_std(feature_scope,
                                                                          inverted_features=inverted_features,
                                                                          range_conditions=range_conditions,
                                                                          gen_code_stats=gen_code_stats)
 
-        nominator = self._indicator_expectation(medium_file, feature_scope,
+        nominator = self._indicator_expectation(feature_scope,
                                                 inverted_features=inverted_features,
                                                 range_conditions=range_conditions,
                                                 gen_code_stats=gen_code_stats)
@@ -355,7 +355,7 @@ class RSPN:
             [inverted_features[feature_scope.index(variable_scope)] for variable_scope in normalizing_scope]
         assert all(inverted_features_of_norm), "Normalizing factors should be inverted"
 
-        denominator = self._indicator_expectation(medium_file, normalizing_scope,
+        denominator = self._indicator_expectation(normalizing_scope,
                                                   inverted_features=inverted_features_of_norm,
                                                   range_conditions=range_conditions)
         return std, nominator / denominator

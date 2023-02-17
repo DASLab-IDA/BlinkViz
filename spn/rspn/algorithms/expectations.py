@@ -14,7 +14,7 @@ from rspn.structure.base import Sum
 logger = logging.getLogger(__name__)
 
 
-def expectation(medium_file, spn, feature_scope, inverted_features, ranges, node_expectation=None, node_likelihoods=None,
+def expectation(spn, feature_scope, inverted_features, ranges, node_expectation=None, node_likelihoods=None,
                 use_generated_code=False, spn_id=None, meta_types=None, gen_code_stats=None):
     """Compute the Expectation:
         E[1_{conditions} * X_feature_scope]
@@ -23,13 +23,11 @@ def expectation(medium_file, spn, feature_scope, inverted_features, ranges, node
         The conditional expectation would be E[1_{conditions} * X_feature_scope]/P(conditions)
     """
     
-
     # evidence_scope = set([i for i, r in enumerate(ranges) if not np.isnan(r)])
     evidence_scope = set([i for i, r in enumerate(ranges[0]) if r is not None])
     evidence = ranges
 
     assert not (len(evidence_scope) > 0 and evidence is None)
-
 
     relevant_scope = set()
     relevant_scope.update(evidence_scope)
@@ -38,7 +36,7 @@ def expectation(medium_file, spn, feature_scope, inverted_features, ranges, node
        
         return np.ones((ranges.shape[0], 1))
 
-
+    # not group-by
     if ranges.shape[0] == 1:
 
         applicable = True
@@ -73,81 +71,14 @@ def expectation(medium_file, spn, feature_scope, inverted_features, ranges, node
      
             result, ns = expectation_recursive(spn, feature_scope, inverted_features, relevant_scope, evidence,
                                         node_expectation, node_likelihoods, node_status)
-            node_status_list = np.zeros(5000)
-            for node_id in list(node_status.keys()):
-                node_status_list[node_id] = node_status[node_id][0]
             result = np.array([result])
-            #time.sleep(1)
-            node_status_lists = [node_status_list]
-            if os.path.exists(medium_file):
-                with open(medium_file, 'rb') as status_file:
-                    previous = pickle.load(status_file)
-                current = []
-                for idx in range(len(previous)):
-                    current_i = previous[idx] + node_status_lists[idx]
-                    current.append(current_i)
-                #print("current:", current)
-                #print("len(current):", len(current))
-                #print("len(current[0]):", len(current[0]))
-                with open(medium_file, 'wb+') as status_file:
-                    pickle.dump(current, status_file, pickle.HIGHEST_PROTOCOL)
-            else:
-                #print("node_status_lists:", node_status_lists)
-                #print("len(node_status_lists:", len(node_status_lists))
-                #print("len(ndoe_status_lists[0]):", len(node_status_lists[0]))
-                with open(medium_file, 'wb+') as status_file:
-                    pickle.dump(node_status_lists, status_file, pickle.HIGHEST_PROTOCOL)
-            #file_name = "/home/qym/blinkviz/deepdb/flights-benchmark/ensemble_learning/status_" + str(int(time.time())) + ".pkl"
-            #if os.path.exists(medium_file):
-            #    with open(medium_file, 'rb') as status_file:
-            #        previous = pickle.load(status_file)
-            #    current = previous + node_status
-            #    with open(medium_file, 'wb+') as status_file:
-            #        pickle.dump(current, status_file, pickle.HIGHEST_PROTOCOL)
-            #else:
-            #   with open(medium_file, 'wb+') as status_file:
-            #        pickle.dump(node_status, status_file, pickle.HIGHEST_PROTOCOL)
-            return result
+            return result, ns
     # full batch version
     node_status = dict()
     result, ns = expectation_recursive_batch(spn, feature_scope, inverted_features, relevant_scope, evidence,
                                        node_expectation, node_likelihoods, node_status)
 
-    #print("expectation - node_status:", ns)
-    node_status_lists = []
-    a1 = list(node_status.values())[0][0]
-    group_num = len(a1)
-    for i in range(group_num):
-        node_status_list = np.zeros(5000)
-        for node_id in list(node_status.keys()):
-            node_status_list[node_id] = node_status[node_id][0][i]
-            #print("type(node_status_list[node_id]:", type(node_status_list[node_id]))
-        #print("node_status_list:", node_status_list)
-        #print("len(node_status_list):", len(node_status_list))
-        #print("(node_status_list[0]).tolist():", (node_status_list).tolist())
-        node_status_lists.append((node_status_list).tolist())
-    #time.sleep(1)
-    #file_name = "/home/qym/blinkviz/deepdb/flights-benchmark/ensemble_learning/status_" + str(int(time.time())) + ".pkl"
-    if os.path.exists(medium_file):
-        with open(medium_file, 'rb') as status_file:
-            previous = pickle.load(status_file)
-        current = []
-        for idx in range(len(previous)):
-            current_i = previous[idx] + node_status_lists[idx]
-            current.append(current_i)
-        #print("current:", current)
-        #print("len(current):", len(current))
-        #print("len(current[0]):", len(current[0]))
-        with open(medium_file, 'wb+') as status_file:
-            pickle.dump(current, status_file, pickle.HIGHEST_PROTOCOL)
-    else:
-        #print("node_status_lists:", node_status_lists)
-        #print("len(node_status_lists:", len(node_status_lists))
-        #print("len(ndoe_status_lists[0]):", len(node_status_lists[0]))
-        with open(medium_file, 'wb+') as status_file:
-            pickle.dump(node_status_lists, status_file, pickle.HIGHEST_PROTOCOL)
-    #print("expectation - return4")
-    return result
+    return result, ns
 
 def expectation_recursive_batch(node, feature_scope, inverted_features, relevant_scope, evidence, node_expectation,
                                 node_likelihoods, node_status):

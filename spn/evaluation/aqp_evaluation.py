@@ -94,7 +94,7 @@ def compute_relative_error(true, predicted, debug=False):
     return abs(relative_error)
 
 
-def evaluate_aqp_queries(medium_path, ensemble_location, query_filename, target_path, schema, ground_truth_path,
+def evaluate_aqp_queries(ensemble_location, query_filename, target_path, schema, ground_truth_path,
                          rdc_spn_selection, pairwise_rdc_path, max_variants=5, merge_indicator_exp=False,
                          exploit_overlapping=False, min_sample_ratio=0, debug=False,
                          show_confidence_intervals=False):
@@ -135,9 +135,6 @@ def evaluate_aqp_queries(medium_path, ensemble_location, query_filename, target_
         bfs(spn.mspn, printNode)
     """
     
-    if (os.path.exists(medium_path+"/projection.txt")):
-        os.remove(medium_path+"/projection.txt")
-    
     csv_rows = []
 
     # read all queries
@@ -148,10 +145,6 @@ def evaluate_aqp_queries(medium_path, ensemble_location, query_filename, target_
         ground_truth = pickle.load(handle)
 
     for query_no, query_str in enumerate(queries):
-        #with open("/home/qym/blinkviz/deepdb/flights-benchmark/ensemble_learning/eval_tmp.txt","w") as eval_file:
-        #    eval_file.write("start\n")
-
-        medium_file = medium_path+"/status" + str(query_no) + ".pkl"
         
         query_str = query_str.strip()
         logger.info(f"Evaluating AQP query {query_no}: {query_str}")
@@ -160,7 +153,7 @@ def evaluate_aqp_queries(medium_path, ensemble_location, query_filename, target_
         query = parse_query(query_str.strip(), schema)
         aqp_start_t = perf_counter()
         
-        confidence_intervals, aqp_result = spn_ensemble.evaluate_query(query_no, medium_path, medium_file, query, rdc_spn_selection=rdc_spn_selection,
+        confidence_intervals, aqp_result = spn_ensemble.evaluate_query(query_no, query, rdc_spn_selection=rdc_spn_selection,
                                                                     pairwise_rdc_path=pairwise_rdc_path,
                                                                     merge_indicator_exp=merge_indicator_exp,
                                                                     max_variants=max_variants,
@@ -324,24 +317,6 @@ def evaluate_aqp_queries(medium_path, ensemble_location, query_filename, target_
         if ground_truth is not None:
             print("aqp_evaluation ground_truth length:", len(ground_truth))
             true_result = ground_truth[query_no]
-            #print("true_result:", true_result)
-            
-            resultFileName = medium_path+"/query_" + str(query_no) + "_SPN.txt"
-            with open(resultFileName, 'w') as spnResult:
-                spnResult.write(str(aqp_result))
-                spnResult.close()
-
-            resultFileName = medium_path+"/query_" + str(query_no) + "_postgre.txt"
-            with open(resultFileName, 'w') as postgreResult:
-                postgreResult.write(str(true_result))
-                postgreResult.close
-
-            # 如果是stratified sample，对相应的结果进行处理
-            #if stratified_evaluation:
-            #    aqp_result = stratified_evaluate(true_result, aqp_result, schema, query_str, query)
-            
-            #print("stratified true result:", true_result)
-            #print("stratified aqp result:", aqp_result)
             
             if isinstance(aqp_result, list):
 

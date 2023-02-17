@@ -47,7 +47,7 @@ class GenCodeStats:
         self.total_time = 0.0
 
 
-def evaluate_cardinalities(medium_file, ensemble_location, physical_db_name, query_filename, target_csv_path, schema,
+def evaluate_cardinalities(ensemble_location, physical_db_name, query_filename, target_csv_path, schema,
                            rdc_spn_selection, pairwise_rdc_path, use_generated_code=False,
                            true_cardinalities_path='./benchmarks/job-light/sql/job_light_true_cardinalities.csv',
                            max_variants=1, merge_indicator_exp=False, exploit_overlapping=False, min_sample_ratio=0):
@@ -105,7 +105,7 @@ def evaluate_cardinalities(medium_file, ensemble_location, physical_db_name, que
 
         card_start_t = perf_counter()
         _, factors, cardinality_predict, factor_values = spn_ensemble \
-            .cardinality(medium_file, query, rdc_spn_selection=rdc_spn_selection, pairwise_rdc_path=pairwise_rdc_path,
+            .cardinality(query, rdc_spn_selection=rdc_spn_selection, pairwise_rdc_path=pairwise_rdc_path,
                          merge_indicator_exp=merge_indicator_exp, max_variants=max_variants,
                          exploit_overlapping=exploit_overlapping, return_factor_values=True,
                          gen_code_stats=gen_code_stats)

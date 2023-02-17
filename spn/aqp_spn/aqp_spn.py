@@ -103,27 +103,27 @@ class AQPSPN(CombineSPN, RSPN):
 
         return self
 
-    def evaluate_expectation(self, medium_file, expectation, standard_deviations=False, gen_code_stats=None):
+    def evaluate_expectation(self, expectation, standard_deviations=False, gen_code_stats=None):
         """
         Evaluates expectation. Does transformations to map to SPN query compilation.
         :param expectation:
         :return:
         """
-        return self.evaluate_expectation_batch(medium_file, expectation, None, None, standard_deviations=standard_deviations,
+        return self.evaluate_expectation_batch(expectation, None, None, standard_deviations=standard_deviations,
                                                gen_code_stats=gen_code_stats)
 
-    def evaluate_indicator_expectation(self, medium_file, indicator_expectation, standard_deviations=False,
+    def evaluate_indicator_expectation(self, indicator_expectation, standard_deviations=False,
                                        gen_code_stats=None):
         """
         Evaluates indicator expectation.
         :param indicator_expectation: 
         :return:
         """
-        return self.evaluate_indicator_expectation_batch(medium_file, indicator_expectation, None, None,
+        return self.evaluate_indicator_expectation_batch(indicator_expectation, None, None,
                                                          standard_deviations=standard_deviations,
                                                          gen_code_stats=gen_code_stats)
 
-    def evaluate_expectation_batch(self, medium_file, expectation, group_bys, group_by_tuples, standard_deviations=False,
+    def evaluate_expectation_batch(self, expectation, group_bys, group_by_tuples, standard_deviations=False,
                                    impute_p=False, gen_code_stats=None):
         """
         Evaluates a batch of expectations according to different groupings.
@@ -158,7 +158,7 @@ class AQPSPN(CombineSPN, RSPN):
             inverted_features.append(True)
 
         std_values, exp_values = \
-            self._normalized_conditional_expectation(medium_file, features, inverted_features=inverted_features,
+            self._normalized_conditional_expectation(features, inverted_features=inverted_features,
                                                      normalizing_scope=normalizing_scope,
                                                      range_conditions=range_conditions,
                                                      standard_deviations=standard_deviations,
@@ -173,7 +173,7 @@ class AQPSPN(CombineSPN, RSPN):
         result = postprocess_exps(expectation, exp_values)
         return std_values, result
 
-    def evaluate_indicator_expectation_batch(self, medium_file, indicator_expectation, group_bys, group_by_tuples,
+    def evaluate_indicator_expectation_batch(self, indicator_expectation, group_bys, group_by_tuples,
                                              standard_deviations=False, gen_code_stats=None):
         """
         Evaluates a batch of indicator expectations according to different groupings.
@@ -190,7 +190,7 @@ class AQPSPN(CombineSPN, RSPN):
                 return isclose
             return all(isclose)
 
-        def postprocess_exps(medium_file, indicator_expectation, features, exp_values, std_values):
+        def postprocess_exps(indicator_expectation, features, exp_values, std_values):
             # if indicator expectation has zero probability, split up
             if isclosetozero(exp_values) and \
                     indicator_expectation.nominator_multipliers is not None \
@@ -199,9 +199,9 @@ class AQPSPN(CombineSPN, RSPN):
                 # the probability part
                 exp_values = np.ones(exp_values.shape)
                 if standard_deviations:
-                    exp_values *= self._unnormalized_conditional_expectation(medium_file, features)
+                    exp_values *= self._unnormalized_conditional_expectation(features)
                 else:
-                    std, exp = self._unnormalized_conditional_expectation_with_std(medium_file, features)
+                    std, exp = self._unnormalized_conditional_expectation_with_std(features)
                     std_values = np.ones(exp_values.shape) * std
                     exp_values *= exp
 
@@ -238,15 +238,15 @@ class AQPSPN(CombineSPN, RSPN):
                 features.append(self.column_names.index(table + '.' + multiplier))
                 inverted_features.append(True)
         if standard_deviations:
-            std_values, exp_values = self._indicator_expectation_with_std(medium_file, features, inverted_features=inverted_features,
+            std_values, exp_values = self._indicator_expectation_with_std(features, inverted_features=inverted_features,
                                                                           range_conditions=range_conditions)
 
-            result = postprocess_exps(medium_file, indicator_expectation, features, exp_values, std_values)
+            result = postprocess_exps(indicator_expectation, features, exp_values, std_values)
             return result
 
-        exp_values = self._indicator_expectation(medium_file, features, inverted_features=inverted_features,
+        exp_values = self._indicator_expectation(features, inverted_features=inverted_features,
                                                  range_conditions=range_conditions, gen_code_stats=gen_code_stats)
-        result = postprocess_exps(medium_file, indicator_expectation, features, exp_values, None)
+        result = postprocess_exps(indicator_expectation, features, exp_values, None)
         return result
 
     # 获取result tuples
