@@ -94,7 +94,7 @@ def compute_relative_error(true, predicted, debug=False):
     return abs(relative_error)
 
 
-def evaluate_aqp_queries(ensemble_location, query_filename, target_path, schema, ground_truth_path,
+def evaluate_aqp_queries(return_node_status, target_ns_path, ensemble_location, query_filename, target_path, schema, ground_truth_path,
                          rdc_spn_selection, pairwise_rdc_path, max_variants=5, merge_indicator_exp=False,
                          exploit_overlapping=False, min_sample_ratio=0, debug=False,
                          show_confidence_intervals=False):
@@ -113,29 +113,8 @@ def evaluate_aqp_queries(ensemble_location, query_filename, target_path, schema,
 
     spn_ensemble = read_ensemble(ensemble_location, build_reverse_dict=True)
     
-    """
-    def printNode(node):
-        if isinstance(node, Sum):
-            print("bfs - sum node:", node)
-            print("bfs - sum node.scope:", node.scope)
-            print("bfs - sum node.weights:", node.weights)
-            print("bfs - sum node.children:", node.children)
-            print("bfs - sum node.cluster_centers:", node.cluster_centers)
-            print("bfs - sum node.cardinality:", node.cardinality)
-        elif isinstance(node, Product):
-            print("bfs - product node:", node)
-            print("bfs - product node.scope:", node.scope)
-            print("bfs - product node.children:", node.children)
-        else:
-            print("bfs - leaf node:", node)
-            print("bfs - leaf node.scope:", node.scope)
-
-    print("aqp_evaluation - bfs start ========================")
-    for spn in spn_ensemble.spns:
-        bfs(spn.mspn, printNode)
-    """
-    
     csv_rows = []
+    node_status = []
 
     # read all queries
     with open(query_filename) as f:
@@ -149,177 +128,27 @@ def evaluate_aqp_queries(ensemble_location, query_filename, target_path, schema,
         query_str = query_str.strip()
         logger.info(f"Evaluating AQP query {query_no}: {query_str}")
 
-        # 解析query
+        # parse query
         query = parse_query(query_str.strip(), schema)
         aqp_start_t = perf_counter()
         
-        confidence_intervals, aqp_result = spn_ensemble.evaluate_query(query_no, query, rdc_spn_selection=rdc_spn_selection,
+        confidence_intervals, aqp_result, ns = spn_ensemble.evaluate_query(return_node_status, query_no, query, rdc_spn_selection=rdc_spn_selection,
                                                                     pairwise_rdc_path=pairwise_rdc_path,
                                                                     merge_indicator_exp=merge_indicator_exp,
                                                                     max_variants=max_variants,
                                                                     exploit_overlapping=exploit_overlapping,
                                                                     debug=debug,
                                                                     confidence_intervals=show_confidence_intervals)
-    
-        """
-        # 判断是否有bin，单独的count(*)、AVG(a)这种不会有bin,不用考虑
-        if len(query.bins)>0:
-            print("aqp_evaluation.evaluate_aqp_queries query.bins:", query.bins)
-            print("aqp_evaluation.evaluate_aqp_queries query.groupbys:", query.group_bys)
-
-            # 将结果转为dataframe
-            result_df = pd.DataFrame(aqp_result)
-            print("aqp_evaluation.evaluate_aqp_queries result_df:", result_df)
-            columns = result_df.columns.values
-            aggregated = columns[-1] #  删除最后一个列名（聚合列）
-            columns = np.delete(columns,-1)
-
-            # 如果聚合类型是COUNT类型或者SUM，可以把结果元组直接合并
-            if query.query_type == QueryType.CARDINALITY or any(
-                    [aggregation_type == AggregationType.SUM or aggregation_type == AggregationType.COUNT
-                    for _, aggregation_type, _ in query.aggregation_operations]):
-
-                # print("count aggregation type:"._, aggregation_type, _)
-
-                # group_by中属性索引跟最终结果的属性索引应该是一致的
-                attr_len = len(aqp_result[0])
-                for bin in query.bins:
-                    for group_by in query.group_bys:
-                        if group_by[1]==bin[0]:
-                            idx = query.group_bys.index(group_by) # 获取属性索引
-                    
-                            bin_size = bin[1]
-                            print("aqp_evaluation.evaluate_aqp_queries bin[0]:", bin[0]) #
-                            print("aqp_evaluation.evaluate_aqp_queries idx:", idx)
-
-                            # /bin_size
-                            print("aqp_evaluation.evaluate_aqp_queries result_df:", result_df)
-                            print("aqp_evaluation.evaluate_aqp_queries columns[idx]:", columns[idx])
-                            print("aqp_evaluation.evaluate_aqp_queries columns:", result_df.columns.values)
-                            result_df[columns[idx]] = result_df[columns[idx]].map(lambda x: round(x/bin_size))
-                            print("aqp_evaluation.evaluate_aqp_queries result_df[columns[idx]]:", result_df[columns[idx]])
-                            print("aqp_evaluation.evaluate_aqp_queries result_df:", result_df)
-
-                # group by & sum
-                print("aqp_evaluation.evaluate_aqp_queries columns:", columns)
-                print("aqp_evaluation.evaluate_aqp_queries type of columns:", type(columns))
-                print("aqp_evaluation.evaluate_aqp_queries aggregated:", aggregated)
-                result_df = result_df.groupby(by=columns.tolist()).agg('sum')
-
-                print("aqp_evaluation.evaluate_aqp_queries result_df:", result_df)
-
-                # result_df -> aqp_result
-                records = result_df.to_records(index=True)
-                aqp_result = list(records)
-                print("aqp_evaluation.evaluate_aqp_queries result:", aqp_result)
-
-            # 如果聚合类型是AVG，结果把每个分组的COUNT也得返回，有bin的话处理完bin再提交给下一步，没有的话去除COUNT值再提交给下一步
-            # or更直接的方法再算一个相同的count SQL 
-            elif any([aggregation_type == AggregationType.AVG for _, aggregation_type, _ in query.aggregation_operations]):
-                # 复制一个query，将类型修改为COUNT
-                count_query = copy.deepcopy(query)
-                # print("count_query.aggregationType:", count_query.aggregation_operations)
-                for opi in range(len(count_query.aggregation_operations)):
-                    tmp = count_query.aggregation_operations[opi]
-                    # print("tmp", tmp)
-                    if tmp[1] == AggregationType.AVG:
-                        # print("tmp:", tmp)
-                        new_op = (tmp[0], AggregationType.COUNT, [])
-                        count_query.aggregation_operations[opi] = new_op
-                # print("count_query.aggregationType:", count_query.aggregation_operations)
-
-                # 执行count query
-                ci, count_result = spn_ensemble.evaluate_query(count_query, rdc_spn_selection=rdc_spn_selection,
-                                                                    pairwise_rdc_path=pairwise_rdc_path,
-                                                                    merge_indicator_exp=merge_indicator_exp,
-                                                                    max_variants=max_variants,
-                                                                    exploit_overlapping=exploit_overlapping,
-                                                                    debug=debug,
-                                                                    confidence_intervals=show_confidence_intervals)
-                # 根据avg和count result合并结果
-                print("aqp_result of avg_query:", aqp_result)
-                print("aqp_result of count_query:", count_result)
-            
-                # 将结果转为dataframe
-                aqp_result_df = pd.DataFrame(aqp_result)
-                print("aqp_evaluation.evaluate_aqp_queries aqp_result_df:", aqp_result_df)
-                columns = aqp_result_df.columns.values
-                aggregated = columns[-1] #  删除最后一个列名（聚合列）
-                columns = np.delete(columns,-1)
-
-                count_result_df = pd.DataFrame(count_result)
-                print("aqp_evaluation.evaluate_aqp_queries count_result_df:", count_result_df)
-
-                # 将两个dataframe内连接（按照除聚合列之外的列）
-                merged_result_df = pd.merge(aqp_result_df, count_result_df, how='inner', on=columns.tolist())
-                print("aqp_evaluation.evaluate_aqp_queries merged_result_df:", merged_result_df)
-
-                # 计算avg*count
-                new_columns = merged_result_df.columns.values
-                avg_idx = new_columns[-2]
-                count_idx = new_columns[-1]
-                new_columns = np.delete(new_columns,-1)
-                new_columns = np.delete(new_columns,-1)
-                merged_result_df['avg*count'] = merged_result_df[avg_idx]*merged_result_df[count_idx]
-                print("aqp_evaluation.evaluate_aqp_queries merged_result_df:", merged_result_df)
-
-                # /bin_size，group, sum
-                # group_by中属性索引跟最终结果的属性索引应该是一致的
-                attr_len = len(aqp_result[0])
-                for bin in query.bins:
-                    for group_by in query.group_bys:
-                        if group_by[1]==bin[0]:
-                            idx = query.group_bys.index(group_by) # 获取属性索引
-                    
-                            bin_size = bin[1]
-                            print("aqp_evaluation.evaluate_aqp_queries bin[0]:", bin[0]) #
-                            print("aqp_evaluation.evaluate_aqp_queries idx:", idx)
-
-                            # /bin_size
-                            merged_result_df[columns[idx]] = merged_result_df[columns[idx]].map(lambda x: round(x/bin_size))
-                            print("aqp_evaluation.evaluate_aqp_queries merged_result_df[columns[idx]]:", merged_result_df[columns[idx]])
-                            print("aqp_evaluation.evaluate_aqp_queries merged_result_df:", merged_result_df)
-
-                # group by & sum
-                print("aqp_evaluation.evaluate_aqp_queries columns:", columns)
-                print("aqp_evaluation.evaluate_aqp_queries type of columns:", type(columns))
-                print("aqp_evaluation.evaluate_aqp_queries aggregated:", aggregated)
-                merged_result_df = merged_result_df.groupby(by=columns.tolist()).agg('sum')
-
-                print("aqp_evaluation.evaluate_aqp_queries merged_result_df:", merged_result_df)
-
-                # avg * count / count
-                new_columns = merged_result_df.columns.values
-                merged_result_df['avg*count'] = merged_result_df['avg*count'] / merged_result_df[new_columns[-2]]
-                print(merged_result_df.columns.values)
-                merged_result_df.drop(columns=[new_columns[-2]], inplace=True)
-                print(merged_result_df.columns.values)
-                merged_result_df.drop(columns=[new_columns[-3]], inplace=True)
-                print("aqp_evaluation.evaluate_aqp_queries merged_result_df:", merged_result_df)
-
-
-                # result_df -> aqp_result
-                records = merged_result_df.to_records(index=True)
-                aqp_result = list(records)
-                print("aqp_evaluation.evaluate_aqp_queries result:", aqp_result)
-
-            else:
-                print("aqp_evaluation handle binning: unhandled query:", query_str)
-        """
-
 
         aqp_end_t = perf_counter()
         latency = aqp_end_t - aqp_start_t
         logger.info(f"\t\t{'total_time:':<32}{latency} secs")
-
-
 
         if ground_truth is not None:
             print("aqp_evaluation ground_truth length:", len(ground_truth))
             true_result = ground_truth[query_no]
             
             if isinstance(aqp_result, list):
-
                 average_relative_error, bin_completeness, false_bin_percentage, total_bins, \
                 confidence_interval_precision, confidence_interval_length, _ = \
                     evaluate_group_by(aqp_result, true_result, confidence_intervals)
@@ -334,7 +163,6 @@ def evaluate_aqp_queries(ensemble_location, query_filename, target_path, schema,
                     logger.info(f"\t\t{'confidence_interval_length: ':<32}{confidence_interval_length * 100:>.2f}%")
 
             else:
-
                 true_result = true_result[0][0]
                 predicted_value = aqp_result
 
@@ -365,12 +193,12 @@ def evaluate_aqp_queries(ensemble_location, query_filename, target_path, schema,
                             })
         else:
             logger.info(f"\t\tpredicted: {aqp_result}")
-        #except Exception as e:
-        #    print("error occured in query:", query_no)
-        #    print("error:", e)
-        #    continue
+
+        node_status.append(ns)
 
     save_csv(csv_rows, target_path)
+    with open(target_ns_path, 'wb') as f:
+        pickle.dump(node_status, target_ns_path, pickle.HIGHEST_PROTOCOL)
 
 
 def evaluate_confidence_interval(confidence_interval, true_result, predicted):

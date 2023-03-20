@@ -157,7 +157,7 @@ class AQPSPN(CombineSPN, RSPN):
             normalizing_scope.append(index)
             inverted_features.append(True)
 
-        std_values, exp_values = \
+        std_values, exp_values, node_status_no, node_status_de = \
             self._normalized_conditional_expectation(features, inverted_features=inverted_features,
                                                      normalizing_scope=normalizing_scope,
                                                      range_conditions=range_conditions,
@@ -171,7 +171,7 @@ class AQPSPN(CombineSPN, RSPN):
                 std_values = std_values.reshape(len(group_by_tuples), 1)
 
         result = postprocess_exps(expectation, exp_values)
-        return std_values, result
+        return std_values, result, node_status_no, node_status_de
 
     def evaluate_indicator_expectation_batch(self, indicator_expectation, group_bys, group_by_tuples,
                                              standard_deviations=False, gen_code_stats=None):
@@ -244,10 +244,10 @@ class AQPSPN(CombineSPN, RSPN):
             result = postprocess_exps(indicator_expectation, features, exp_values, std_values)
             return result
 
-        exp_values = self._indicator_expectation(features, inverted_features=inverted_features,
+        exp_values, node_status = self._indicator_expectation(features, inverted_features=inverted_features,
                                                  range_conditions=range_conditions, gen_code_stats=gen_code_stats)
         result = postprocess_exps(indicator_expectation, features, exp_values, None)
-        return result
+        return result, node_status
 
     # 获取result tuples
     def evaluate_group_by_combinations(self, features, range_conditions=None):

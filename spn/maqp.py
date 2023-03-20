@@ -87,6 +87,8 @@ if __name__ == '__main__':
                         type=int, default=1)
     parser.add_argument('--no_exploit_overlapping', action='store_true')
     parser.add_argument('--no_merge_indicator_exp', action='store_true')
+    parser.add_argument('--return_node_status', help='Return the node status?', action='store_true')
+    parser.add_argument('--target_ns_path', help='The target path to store the node status')
 
     # evaluation of spn ensembles in folder
     parser.add_argument('--hdf_build_path', default='')
@@ -181,7 +183,7 @@ if __name__ == '__main__':
                 target_path = args.target_path.format(i, j)
                 query_file_location = args.query_file_location.format(i, j)
                 true_cardinalities_path = args.ground_truth_file_location.format(i, j)
-                evaluate_cardinalities("/hh.txt", args.ensemble_location, args.database_name, query_file_location, target_path,
+                evaluate_cardinalities(args.ensemble_location, args.database_name, query_file_location, target_path,
                                        schema, args.rdc_spn_selection, args.pairwise_rdc_path,
                                        use_generated_code=args.use_generated_code,
                                        merge_indicator_exp=args.merge_indicator_exp,
@@ -194,7 +196,7 @@ if __name__ == '__main__':
 
         logging.info(
             f"maqp(evaluate_cardinalities: database_name={args.database_name}, target_path={args.target_path})")
-        evaluate_cardinalities("/hh.txt", args.ensemble_location, args.database_name, args.query_file_location, args.target_path,
+        evaluate_cardinalities(args.ensemble_location, args.database_name, args.query_file_location, args.target_path,
                                schema, args.rdc_spn_selection, args.pairwise_rdc_path,
                                use_generated_code=args.use_generated_code,
                                merge_indicator_exp=args.merge_indicator_exp,
@@ -217,7 +219,7 @@ if __name__ == '__main__':
     if args.evaluate_aqp_queries:
         from evaluation.aqp_evaluation import evaluate_aqp_queries
 
-        evaluate_aqp_queries(args.ensemble_location, args.query_file_location, args.target_path, schema,
+        evaluate_aqp_queries(args.return_node_status, args.target_ns_path, args.ensemble_location, args.query_file_location, args.target_path, schema,
                              args.ground_truth_file_location, args.rdc_spn_selection, args.pairwise_rdc_path,
                              max_variants=args.max_variants,
                              merge_indicator_exp=args.merge_indicator_exp,

@@ -743,9 +743,7 @@ class SPNEnsemble:
     #
     #     return prediction_spn.predict(ranges, regression_column)
 
-
-    # 返回的参数是置信度+aqp结果，分了很多种情况讨论
-    def evaluate_query(self, query_no, query, rdc_spn_selection=False, pairwise_rdc_path=None,
+    def evaluate_query(self, return_node_status, query_no, query, rdc_spn_selection=False, pairwise_rdc_path=None,
                        dry_run=False, merge_indicator_exp=True, max_variants=10,
                        exploit_overlapping=False, debug=False, display_intermediate_results=False,
                        exploit_incoming_multipliers=True, confidence_intervals=False,
@@ -762,50 +760,42 @@ class SPNEnsemble:
 
         result_tuples = None
         technical_group_by_scopes = []
-        # 计算group by scopes
+        
         if len(query.group_bys) > 0:
             group_by_start_t = perf_counter()
             # tuples that should appear in the group by clause
             group_bys_scopes, result_tuples, result_tuples_translated = self._evaluate_group_by_spn_ensembles(query)
             group_by_end_t = perf_counter()
             technical_group_by_scopes = [tuple(group_bys_scope.split('.', 1)) for group_bys_scope in group_bys_scopes]
-            # 如果结果为0， 直接返回
+            # result_tuples might be None (not included in original code)
             if result_tuples is None:
-                return None, []
+                return None, [], []
             if len(result_tuples)==0:
                 if debug:
                     logger.debug(f"\t\tcomputed 0 group by statements "
                                 f"in {group_by_end_t - group_by_start_t} secs.")
-                return None, []
+                return None, [], []
             if debug:
                 logger.debug(f"\t\tcomputed {len(result_tuples)} group by statements "
                              f"in {group_by_end_t - group_by_start_t} secs.")
-        # 如果是基数估计，直接返回结果
-        # if cardinality query simply return it COUNT/SUM
+        
+        # case 1: cardinality/COUNT/SUM query - compute COUNT
         if query.query_type == QueryType.CARDINALITY or any(
                 [aggregation_type == AggregationType.SUM or aggregation_type == AggregationType.COUNT
                  for _, aggregation_type, _ in query.aggregation_operations]):
             prot_card_start_t = perf_counter()
 
             # First get the prototypical factors for concrete group by tuple
-            prototype_query = copy.deepcopy(query) # copy了一个query对象
+            prototype_query = copy.deepcopy(query)
             artificially_added_conditions = []
             
-            # If result=0, return
-            """
-            if len(result_tuples_translated)==0:
-                re = [0]
-                rr = []
-                rr.append(re)
-                return None, rr
-            """
             for group_by_idx, (table, attribute) in enumerate(query.group_bys):
                 # add condition for first group bys
                 condition = attribute + '=' + str(result_tuples_translated[0][group_by_idx])
                 artificially_added_conditions.append((table, condition,))
                 prototype_query.add_where_condition(table, condition)
-            # 先把prototype_query扔进去predict一个结果
-            _, factors, cardinalities, factor_values = self.cardinality(prototype_query,
+            # predict prototype_query
+            _, factors, cardinalities, factor_values, node_status = self.cardinality(return_node_status, prototype_query,
                                                                         rdc_spn_selection=rdc_spn_selection,
                                                                         pairwise_rdc_path=pairwise_rdc_path,
                                                                         dry_run=False,
@@ -820,7 +810,7 @@ class SPNEnsemble:
                     logger.debug(f"\t\tpredicted cardinality: {cardinalities}")
                 logger.debug(f"\t\tcomputed prototypical cardinality in {prot_card_end_t - prot_card_start_t} secs.")
             if len(query.group_bys) == 0 and confidence_intervals:
-                _, factors_no_overlap, _, _ = self.cardinality(prototype_query,
+                _, factors_no_overlap, _, _, node_status = self.cardinality(return_node_status, prototype_query,
                                                                rdc_spn_selection=rdc_spn_selection,
                                                                pairwise_rdc_path=pairwise_rdc_path,
                                                                dry_run=False,
@@ -835,7 +825,6 @@ class SPNEnsemble:
                                                                                  confidence_intervals=True,
                                                                                  confidence_interval_samples=confidence_sample_size)
             if len(query.group_bys) > 0:
-                # cardinality estimation使用的主要方法： 只针对COUNT
                 _, cardinalities = evaluate_factors_group_by(
                     artificially_added_conditions, False,
                     debug, factor_values, factors, result_tuples,
@@ -857,22 +846,6 @@ class SPNEnsemble:
                         debug, factor_values_no_overlap, factors_no_overlap, result_tuples,
                         technical_group_by_scopes, confidence_interval_samples=confidence_sample_size)
 
-            # Bernoulli bound
-            # if confidence_intervals:
-            #     full_join_query = copy.deepcopy(query)
-            #     full_join_query.conditions = []
-            #     full_join_query.table_where_condition_dict = dict()
-            #     _, _, full_join_size = self.cardinality(full_join_query, dry_run=False,
-            #                                             merge_indicator_exp=merge_indicator_exp,
-            #                                             max_variants=max_variants,
-            #                                             exploit_overlapping=exploit_overlapping,
-            #                                             return_factor_values=False,
-            #                                             exploit_incoming_multipliers=exploit_incoming_multipliers)
-            #
-            #     bernoulli_p = cardinalities / full_join_size
-            #     bernoulli_stds = full_join_size * np.sqrt(bernoulli_p * (1 - bernoulli_p) / 10000000)
-            #     cardinality_stds = np.clip(cardinality_stds, bernoulli_stds, np.inf)
-
         def build_confidence_interval(prediction, confidence_interval_std):
 
             z_factor = scipy.stats.norm.ppf(0.95)
@@ -886,6 +859,7 @@ class SPNEnsemble:
                 return build_confidence_interval(cardinalities, cardinality_stds), cardinalities
             return None, cardinalities
 
+        # case 2: SUM/AVG - compute AVG
         result_values = None
         if all_operations_of_type(AggregationType.SUM, query) or all_operations_of_type(AggregationType.AVG, query):
             operation = None
@@ -910,9 +884,9 @@ class SPNEnsemble:
                     # Either sum or avg value. In both cases expectation is required.
                     exp_start_t = perf_counter()
                     # todo. incorporate rdc values
-                    # 选择合适的SPN
+                    # select spn
                     expectation_spn, expectation = self._greedily_select_expectation_spn(query, factors)
-                    # 计算AVG的真正位置
+                    # compute avg
                     if confidence_intervals:
                         current_stds, aggregation_result = expectation_spn.evaluate_expectation_batch(
                             expectation,
@@ -925,7 +899,6 @@ class SPNEnsemble:
                         _, aggregation_result = expectation_spn.evaluate_expectation_batch(expectation,
                                                                                            technical_group_by_scopes,
                                                                                            result_tuples)
-                    #print("spn_ensemble.aggregation_result:", aggregation_result)
                     exp_end_t = perf_counter()
                     if debug:
                         logger.debug(f"\t\tcomputed expectation in {exp_end_t - exp_start_t} secs.")
@@ -959,10 +932,8 @@ class SPNEnsemble:
             elif confidence_intervals:
                 confidence_interval_stds = avg_stds
 
-        # single count
+        # case 3: all COUNT
         elif all_operations_of_type(AggregationType.COUNT, query):
-            print("all count")
-            # 求count的个数
             no_count_ops = len([aggregation_type for aggregation_operation_type, aggregation_type, _ in
                                 query.aggregation_operations if
                                 aggregation_operation_type == AggregationOperationType.AGGREGATION])
@@ -972,7 +943,7 @@ class SPNEnsemble:
             if confidence_intervals:
                 confidence_interval_stds = cardinality_stds
 
-        # mixed operations
+        # case 4: mixed operations - not supported
         else:
             raise NotImplementedError("Mixed operations are currently not implemented.")
 
@@ -983,12 +954,10 @@ class SPNEnsemble:
 
             if confidence_intervals:
                 confidence_values = []
-
                 for i in range(confidence_interval_stds.shape[0]):
                     confidence_values.append(
                         build_confidence_interval(result_values[i][-1], confidence_interval_stds[i]))
                 return confidence_values, result_tuples
-            print("line 818 2")
             return None, result_tuples
 
         # if no group by queries return single value
@@ -996,9 +965,7 @@ class SPNEnsemble:
             return build_confidence_interval(result_values, confidence_interval_stds), result_values
 
         if return_expectation:
-            print("line 818 4")
             return None, result_values, expectation_spn, expectation
-        print("line 818 3") # group by = 0
         return None, result_values
 
     def cardinality(self, query, rdc_spn_selection=False, pairwise_rdc_path=None,
@@ -1017,7 +984,6 @@ class SPNEnsemble:
         """
         rdc_attribute_dict = None
         if rdc_spn_selection:
-            print("pairwise_rdc_path:", pairwise_rdc_path)
             with open(pairwise_rdc_path, 'rb') as handle:
                 rdc_attribute_dict = pickle.load(handle)
 
@@ -1050,7 +1016,6 @@ class SPNEnsemble:
 
         # it does not make sense to sort by cardinality if they are not yet computed
         results.sort(key=lambda x: x[2])
-        print("spn_ensemble.cardinality results2:", results)
         return results[int(len(results) / 2)]
 
     def _cardinality_with_injected_start(self, query, first_spn, next_mergeable_relationships, next_mergeable_tables,
@@ -1083,7 +1048,6 @@ class SPNEnsemble:
         # Again create auxilary query because intersection of query relationships and spn relationships
         # is not necessarily a tree.
         auxilary_query = Query(self.schema_graph)
-        print(next_mergeable_relationships)
         for relationship in next_mergeable_relationships:
             auxilary_query.add_join_condition(relationship)
         auxilary_query.table_set.update(next_mergeable_tables)
@@ -1108,7 +1072,6 @@ class SPNEnsemble:
         extra_multplier_dict = {}
 
         # merge subsequent relationships
-        # 贪心的找能覆盖最多where条件的邻居，重复上述过程
         while len(query.relationship_set) > 0:
 
             # for next joins:
@@ -1170,7 +1133,7 @@ class SPNEnsemble:
                     else:
                         normalizing_multipliers = spn_for_exp_computation.compute_multipliers(original_query)
                         conditions = spn_for_exp_computation.relevant_conditions(original_query)
-                        # 为什么一个用IndicatorExpectation一个用Expectation
+                        # Why IndicatorExpectation and Expectation?
                         expectation = Expectation([feature], normalizing_multipliers, conditions,
                                                   spn=spn_for_exp_computation)
                         extra_multplier_dict[spn_for_exp_computation] = expectation

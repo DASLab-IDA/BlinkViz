@@ -175,15 +175,15 @@ class RSPN:
                                    Categorical: categorical_likelihood_range}
                                    
         if hasattr(self, 'use_generated_code') and self.use_generated_code and not force_no_generated:
-            full_result = expectation(self.mspn, feature_scope, inverted_features, range_conditions,
+            full_result, node_status = expectation(self.mspn, feature_scope, inverted_features, range_conditions,
                                       node_expectation=_node_expectation, node_likelihoods=_node_likelihoods_range,
                                       use_generated_code=True, spn_id=self.id, meta_types=self.meta_types,
                                       gen_code_stats=gen_code_stats)
         else:
-            full_result = expectation(self.mspn, feature_scope, inverted_features, range_conditions,
+            full_result, node_status = expectation(self.mspn, feature_scope, inverted_features, range_conditions,
                                       node_expectation=_node_expectation, node_likelihoods=_node_likelihoods_range)
 
-        return full_result
+        return full_result, node_status
 
     def _augment_not_null_conditions(self, feature_scope, range_conditions):
         if range_conditions is None:
@@ -220,7 +220,7 @@ class RSPN:
         V(X)=E(X^2)-E(X)^2.
         :return:
         """
-        e_x = self._indicator_expectation(feature_scope, identity_leaf_expectation=identity_expectation,
+        e_x, node_status_x = self._indicator_expectation(feature_scope, identity_leaf_expectation=identity_expectation,
                                           inverted_features=inverted_features,
                                           range_conditions=range_conditions)
 
@@ -232,7 +232,7 @@ class RSPN:
             std = np.sqrt(e_x * (1 - e_x) * 1 / n)
             return std, e_x
 
-        e_x_sq = self._indicator_expectation(feature_scope,
+        e_x_sq, node_status_sq = self._indicator_expectation(feature_scope,
                                              identity_leaf_expectation=partial(identity_expectation, power=2),
                                              inverted_features=inverted_features,
                                              range_conditions=range_conditions,
@@ -243,7 +243,7 @@ class RSPN:
         # Indeed divide by sample size of SPN not only qualifying tuples. Because this is not a conditional expectation.
         std = np.sqrt(v_x / n)
 
-        return std, e_x
+        return std, e_x, node_status_sq, node_status_x
 
     def _unnormalized_conditional_expectation(self, feature_scope, inverted_features=None, range_conditions=None,
                                               impute_p=False, gen_code_stats=None):
@@ -254,11 +254,8 @@ class RSPN:
 
         range_conditions = self._augment_not_null_conditions(feature_scope, range_conditions)
         # avg case1
-        unnormalized_exp = self._indicator_expectation(feature_scope, inverted_features=inverted_features,
+        unnormalized_exp, node_status = self._indicator_expectation(feature_scope, inverted_features=inverted_features,
                                                        range_conditions=range_conditions, gen_code_stats=gen_code_stats)
-
-        # print("rspn._unnormalized_conditional_expectation range_conditions:", range_conditions)
-
         p = self._probability(range_conditions)
         if any(p == 0):
             if impute_p:
@@ -270,7 +267,7 @@ class RSPN:
             return self._indicator_expectation(feature_scope, inverted_features=inverted_features,
                                                gen_code_stats=gen_code_stats)
 
-        return unnormalized_exp / p
+        return unnormalized_exp / p, node_status
 
     def _unnormalized_conditional_expectation_with_std(self, feature_scope, inverted_features=None,
                                                        range_conditions=None, gen_code_stats=None):
@@ -281,14 +278,14 @@ class RSPN:
         range_conditions = self._augment_not_null_conditions(feature_scope, range_conditions)
         p = self._probability(range_conditions)
 
-        e_x_sq = self._indicator_expectation(feature_scope,
+        e_x_sq, node_status_sq = self._indicator_expectation(feature_scope,
                                              identity_leaf_expectation=partial(identity_expectation, power=2),
                                              inverted_features=inverted_features,
                                              range_conditions=range_conditions,
                                              force_no_generated=True,
                                              gen_code_stats=gen_code_stats) / p
 
-        e_x = self._indicator_expectation(feature_scope, inverted_features=inverted_features,
+        e_x, node_status_x = self._indicator_expectation(feature_scope, inverted_features=inverted_features,
                                           range_conditions=range_conditions,
                                           gen_code_stats=gen_code_stats) / p
 
@@ -297,7 +294,7 @@ class RSPN:
         n = p * self.full_sample_size
         std = np.sqrt(v_x / n)
 
-        return std, e_x
+        return std, e_x, node_status_sq, node_status_x
 
     def _normalized_conditional_expectation(self, feature_scope, inverted_features=None, normalizing_scope=None,
                                             range_conditions=None, standard_deviations=False, impute_p=False,
@@ -345,7 +342,7 @@ class RSPN:
                                                                          range_conditions=range_conditions,
                                                                          gen_code_stats=gen_code_stats)
 
-        nominator = self._indicator_expectation(feature_scope,
+        nominator, node_status_no = self._indicator_expectation(feature_scope,
                                                 inverted_features=inverted_features,
                                                 range_conditions=range_conditions,
                                                 gen_code_stats=gen_code_stats)
@@ -355,7 +352,7 @@ class RSPN:
             [inverted_features[feature_scope.index(variable_scope)] for variable_scope in normalizing_scope]
         assert all(inverted_features_of_norm), "Normalizing factors should be inverted"
 
-        denominator = self._indicator_expectation(normalizing_scope,
+        denominator, node_status_de = self._indicator_expectation(normalizing_scope,
                                                   inverted_features=inverted_features_of_norm,
                                                   range_conditions=range_conditions)
-        return std, nominator / denominator
+        return std, nominator / denominator, node_status_no, node_status_de
