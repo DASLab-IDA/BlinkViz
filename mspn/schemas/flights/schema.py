@@ -1,4 +1,4 @@
-from ensemble_compilation.graph_representation import SchemaGraph, Table
+from ...ensemble_compilation.graph_representation import SchemaGraph, Table
 
 def gen_flights_5B_schema(csv_path):
     schema = gen_flights_10M_schema(csv_path)

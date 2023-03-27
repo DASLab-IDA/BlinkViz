@@ -6,7 +6,7 @@ import re
 import sqlparse
 from sqlparse.tokens import Token
 
-from ensemble_compilation.graph_representation import Query, QueryType, AggregationType, AggregationOperationType
+from ..ensemble_compilation.graph_representation import Query, QueryType, AggregationType, AggregationOperationType
 
 logger = logging.getLogger(__name__)
 

@@ -9,13 +9,13 @@ from time import perf_counter
 import numpy as np
 from spn.structure.Base import Leaf
 import scipy.stats
-from ensemble_compilation.graph_representation import Query, QueryType, AggregationType, AggregationOperationType
-from ensemble_compilation.probabilistic_query import IndicatorExpectation, Expectation
-from evaluation.utils import parse_what_if_query, all_operations_of_type
+from .graph_representation import Query, QueryType, AggregationType, AggregationOperationType
+from .probabilistic_query import IndicatorExpectation, Expectation
+from ..evaluation.utils import parse_what_if_query, all_operations_of_type
 from spn.algorithms.Statistics import get_structure_stats
 import bz2
 from spn.structure.Base import get_nodes_by_type, Leaf, Product, eval_spn_top_down, assign_ids
-from rspn.structure.base import Sum
+from ..rspn.structure.base import Sum
 
 np.random.seed(1)
 
@@ -219,6 +219,7 @@ def read_ensemble(ensemble_locations, build_reverse_dict=False):
     ensemble = SPNEnsemble(None)
     for ensemble_location in ensemble_locations:
         with open(ensemble_location, 'rb') as handle:
+            print("location:",ensemble_location)
             current_ensemble = pickle.load(handle)
             ensemble.schema_graph = current_ensemble.schema_graph
             for spn in current_ensemble.spns:

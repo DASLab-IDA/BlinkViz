@@ -20,6 +20,7 @@ _CN.model = 'base'
 #_CN.spn_input_dims = [782, 782, 782]
 _CN.spn_input_dims = [3, 3, 3]
 #_CN.spn_input_dims = [388, 388, 379, 379, 391, 391]
+
 ##########################################
 # base network
 

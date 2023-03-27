@@ -30,7 +30,6 @@ def validate(model, cfg):
 
     #count = 0
     for i_batch, data_blob in enumerate(test_loader):
-        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",i_batch)
         spn_values, spn_preds, gt = [x.to(cfg.device) for x in data_blob]  
 
         # spn_values = spn_values[None].to(cfg.device)

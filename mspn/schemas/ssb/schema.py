@@ -1,4 +1,4 @@
-from ensemble_compilation.graph_representation import SchemaGraph, Table
+from ...ensemble_compilation.graph_representation import SchemaGraph, Table
 
 def gen_sf1_ssb_schema(csv_path):
     schema = gen_500gb_ssb_schema(csv_path)

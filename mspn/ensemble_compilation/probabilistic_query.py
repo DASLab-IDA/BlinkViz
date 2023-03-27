@@ -1,6 +1,6 @@
 from enum import Enum
 
-from ensemble_compilation.utils import print_conditions
+from .utils import print_conditions
 
 
 class FactorType(Enum):

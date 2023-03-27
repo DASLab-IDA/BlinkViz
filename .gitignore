@@ -131,3 +131,5 @@ dmypy.json
 .flights-benchmark/
 flights-benchmark/
 .log
+.vscode/
+vscode/
