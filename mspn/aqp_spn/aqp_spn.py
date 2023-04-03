@@ -5,13 +5,13 @@ from time import perf_counter
 import numpy as np
 from spn.structure.StatisticalTypes import MetaType
 
-from aqp_spn.group_by_combination import group_by_combinations
-from ensemble_compilation.spn_ensemble import CombineSPN
-from rspn.algorithms.ranges import NominalRange, NumericRange
-from rspn.rspn import RSPN
-from rspn.structure.leaves import IdentityNumericLeaf, identity_distinct_ranges, categorical_distinct_ranges, \
+from .group_by_combination import group_by_combinations
+from ..ensemble_compilation.spn_ensemble import CombineSPN
+from ..rspn.algorithms.ranges import NominalRange, NumericRange
+from ..rspn.rspn import RSPN
+from ..rspn.structure.leaves import IdentityNumericLeaf, identity_distinct_ranges, categorical_distinct_ranges, \
     Categorical, identity_likelihood_range, categorical_likelihood_range
-from rspn.updates.top_down_updates import cluster_center_update_dataset
+from ..rspn.updates.top_down_updates import cluster_center_update_dataset
 
 logger = logging.getLogger(__name__)
 
@@ -112,18 +112,18 @@ class AQPSPN(CombineSPN, RSPN):
         return self.evaluate_expectation_batch(expectation, None, None, standard_deviations=standard_deviations,
                                                gen_code_stats=gen_code_stats)
 
-    def evaluate_indicator_expectation(self, indicator_expectation, standard_deviations=False,
+    def evaluate_indicator_expectation(self, return_node_status, indicator_expectation, standard_deviations=False,
                                        gen_code_stats=None):
         """
         Evaluates indicator expectation.
         :param indicator_expectation: 
         :return:
         """
-        return self.evaluate_indicator_expectation_batch(indicator_expectation, None, None,
+        return self.evaluate_indicator_expectation_batch(return_node_status, indicator_expectation, None, None,
                                                          standard_deviations=standard_deviations,
                                                          gen_code_stats=gen_code_stats)
 
-    def evaluate_expectation_batch(self, expectation, group_bys, group_by_tuples, standard_deviations=False,
+    def evaluate_expectation_batch(self, return_node_status, expectation, group_bys, group_by_tuples, standard_deviations=False,
                                    impute_p=False, gen_code_stats=None):
         """
         Evaluates a batch of expectations according to different groupings.
@@ -173,7 +173,7 @@ class AQPSPN(CombineSPN, RSPN):
         result = postprocess_exps(expectation, exp_values)
         return std_values, result, node_status_no, node_status_de
 
-    def evaluate_indicator_expectation_batch(self, indicator_expectation, group_bys, group_by_tuples,
+    def evaluate_indicator_expectation_batch(self, return_node_status, indicator_expectation, group_bys, group_by_tuples,
                                              standard_deviations=False, gen_code_stats=None):
         """
         Evaluates a batch of indicator expectations according to different groupings.
@@ -190,7 +190,7 @@ class AQPSPN(CombineSPN, RSPN):
                 return isclose
             return all(isclose)
 
-        def postprocess_exps(indicator_expectation, features, exp_values, std_values):
+        def postprocess_exps(return_node_status, indicator_expectation, features, exp_values, std_values):
             # if indicator expectation has zero probability, split up
             if isclosetozero(exp_values) and \
                     indicator_expectation.nominator_multipliers is not None \
@@ -199,9 +199,9 @@ class AQPSPN(CombineSPN, RSPN):
                 # the probability part
                 exp_values = np.ones(exp_values.shape)
                 if standard_deviations:
-                    exp_values *= self._unnormalized_conditional_expectation(features)
+                    exp_values *= self._unnormalized_conditional_expectation(return_node_status, features)
                 else:
-                    std, exp = self._unnormalized_conditional_expectation_with_std(features)
+                    std, exp = self._unnormalized_conditional_expectation_with_std(return_node_status, features)
                     std_values = np.ones(exp_values.shape) * std
                     exp_values *= exp
 
@@ -238,15 +238,15 @@ class AQPSPN(CombineSPN, RSPN):
                 features.append(self.column_names.index(table + '.' + multiplier))
                 inverted_features.append(True)
         if standard_deviations:
-            std_values, exp_values = self._indicator_expectation_with_std(features, inverted_features=inverted_features,
+            std_values, exp_values = self._indicator_expectation_with_std(return_node_status, features, inverted_features=inverted_features,
                                                                           range_conditions=range_conditions)
 
-            result = postprocess_exps(indicator_expectation, features, exp_values, std_values)
+            result = postprocess_exps(return_node_status, indicator_expectation, features, exp_values, std_values)
             return result
 
-        exp_values, node_status = self._indicator_expectation(features, inverted_features=inverted_features,
+        exp_values, node_status = self._indicator_expectation(return_node_status, features, inverted_features=inverted_features,
                                                  range_conditions=range_conditions, gen_code_stats=gen_code_stats)
-        result = postprocess_exps(indicator_expectation, features, exp_values, None)
+        result = postprocess_exps(return_node_status, indicator_expectation, features, exp_values, None)
         return result, node_status
 
     # 获取result tuples

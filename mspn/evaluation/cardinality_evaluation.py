@@ -4,10 +4,10 @@ from time import perf_counter
 import numpy as np
 import pandas as pd
 
-from ensemble_compilation.graph_representation import QueryType
-from ensemble_compilation.physical_db import DBConnection, TrueCardinalityEstimator
-from ensemble_compilation.spn_ensemble import read_ensemble
-from evaluation.utils import parse_query, save_csv
+from ..ensemble_compilation.graph_representation import QueryType
+from ..ensemble_compilation.physical_db import DBConnection, TrueCardinalityEstimator
+from ..ensemble_compilation.spn_ensemble import read_ensemble
+from .utils import parse_query, save_csv
 
 logger = logging.getLogger(__name__)
 

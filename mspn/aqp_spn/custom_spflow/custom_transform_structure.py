@@ -1,7 +1,7 @@
 from spn.structure.Base import get_nodes_by_type, Product, Leaf, assign_ids
 
-from aqp_spn.aqp_leaves import Sum
-from aqp_spn.custom_spflow.custom_validity import is_valid
+from ..aqp_leaves import Sum
+from ..custom_spflow.custom_validity import is_valid
 
 
 def Prune(node, light=False):

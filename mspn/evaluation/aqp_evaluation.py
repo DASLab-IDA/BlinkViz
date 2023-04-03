@@ -9,13 +9,13 @@ import math
 import copy
 import os
 
-from ensemble_compilation.graph_representation import Query, QueryType, AggregationType, AggregationOperationType
-from ensemble_compilation.physical_db import DBConnection
-from ensemble_compilation.spn_ensemble import read_ensemble
-from evaluation.utils import parse_query, save_csv
+from ..ensemble_compilation.graph_representation import Query, QueryType, AggregationType, AggregationOperationType
+from ..ensemble_compilation.physical_db import DBConnection
+from ..ensemble_compilation.spn_ensemble import read_ensemble
+from .utils import parse_query, save_csv
 from spn.structure.Base import bfs
 from spn.structure.Base import Product
-from rspn.structure.base import Sum
+from ..rspn.structure.base import Sum
 
 logger = logging.getLogger(__name__)
 

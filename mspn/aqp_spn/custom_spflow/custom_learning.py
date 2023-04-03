@@ -6,8 +6,8 @@ from spn.algorithms.splitting.Base import preproc, split_data_by_clusters
 from spn.algorithms.splitting.RDC import getIndependentRDCGroups_py
 from spn.structure.StatisticalTypes import MetaType
 
-from aqp_spn.aqp_leaves import Categorical
-from aqp_spn.aqp_leaves import IdentityNumericLeaf
+from ..aqp_leaves import Categorical
+from ..aqp_leaves import IdentityNumericLeaf
 
 logger = logging.getLogger(__name__)
 MAX_UNIQUE_LEAF_VALUES = 10000
@@ -53,7 +53,7 @@ def learn_mspn(
     if rand_gen is None:
         rand_gen = np.random.RandomState(17)
 
-    from aqp_spn.custom_spflow.custom_structure_learning import get_next_operation, learn_structure
+    from ..custom_spflow.custom_structure_learning import get_next_operation, learn_structure
 
     def l_mspn(data, ds_context, cols, rows, min_instances_slice, threshold, ohe):
         split_cols, split_rows = get_splitting_functions(max_sampling_threshold_rows, max_sampling_threshold_cols, cols,
@@ -138,7 +138,7 @@ def create_custom_leaf(data, ds_context, scope):
 
         leaf = IdentityNumericLeaf(unique_vals, mean, inverted_mean, square_mean, inverted_square_mean, prob_sum,
                                    null_value_prob, scope=scope)
-        from aqp_spn.custom_spflow.custom_validity import is_valid_prob_sum
+        from ..custom_spflow.custom_validity import is_valid_prob_sum
         leaf.cardinality = data.shape[0]
         ok, err = is_valid_prob_sum(prob_sum, unique_vals, leaf.cardinality)
         assert ok, err

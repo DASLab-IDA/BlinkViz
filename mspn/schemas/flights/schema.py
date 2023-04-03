@@ -78,7 +78,7 @@ def gen_flights_50M_schema(csv_path):
 def gen_flights_500M_schema(csv_path):
     schema = gen_flights_10M_schema(csv_path)
 
-    schema.table_dictionary['flights'].sample_rate = 0.001
+    schema.table_dictionary['flights'].sample_rate = 0.01
     schema.table_dictionary['flights'].table_size = 500000000
 
     return schema

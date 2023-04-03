@@ -62,7 +62,8 @@ class Ensemble():
             aqp_start_t = perf_counter()
         
             # 之后让status vector和相应group的projection都在这里返回，而不再存储到文件中了
-            confidence_intervals, aqp_result, status_vector = spn.evaluate_query(True, 1, query, rdc_spn_selection=False,
+            confidence_intervals, aqp_result, status_vector = spn.evaluate_query(True, 1, query,
+                                                                    rdc_spn_selection=False,
                                                                     pairwise_rdc_path=None,
                                                                     merge_indicator_exp=False,
                                                                     max_variants=5,

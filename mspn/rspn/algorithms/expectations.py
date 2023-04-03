@@ -8,13 +8,13 @@ import pickle
 from spn.algorithms.Inference import likelihood
 from spn.structure.Base import Product
 
-from rspn.code_generation.convert_conditions import convert_range
-from rspn.structure.base import Sum
+from ..code_generation.convert_conditions import convert_range
+from ..structure.base import Sum
 
 logger = logging.getLogger(__name__)
 
 
-def expectation(spn, feature_scope, inverted_features, ranges, node_expectation=None, node_likelihoods=None,
+def expectation(return_node_status, spn, feature_scope, inverted_features, ranges, node_expectation=None, node_likelihoods=None,
                 use_generated_code=False, spn_id=None, meta_types=None, gen_code_stats=None):
     """Compute the Expectation:
         E[1_{conditions} * X_feature_scope]
@@ -69,23 +69,25 @@ def expectation(spn, feature_scope, inverted_features, ranges, node_expectation=
         
             node_status = dict()
      
-            result, ns = expectation_recursive(spn, feature_scope, inverted_features, relevant_scope, evidence,
+            result, ns = expectation_recursive(return_node_status, spn, feature_scope, inverted_features, relevant_scope, evidence,
                                         node_expectation, node_likelihoods, node_status)
             result = np.array([result])
+            print("74 ns:", ns)
             return result, ns
     # full batch version
     node_status = dict()
-    result, ns = expectation_recursive_batch(spn, feature_scope, inverted_features, relevant_scope, evidence,
+    result, ns = expectation_recursive_batch(return_node_status, spn, feature_scope, inverted_features, relevant_scope, evidence,
                                        node_expectation, node_likelihoods, node_status)
+    print("79 ns:", ns)
 
     return result, ns
 
-def expectation_recursive_batch(node, feature_scope, inverted_features, relevant_scope, evidence, node_expectation,
+def expectation_recursive_batch(return_node_status, node, feature_scope, inverted_features, relevant_scope, evidence, node_expectation,
                                 node_likelihoods, node_status):
     if isinstance(node, Product):
 
         llchildren = np.concatenate(
-            [expectation_recursive_batch(child, feature_scope, inverted_features, relevant_scope, evidence,
+            [expectation_recursive_batch(return_node_status, child, feature_scope, inverted_features, relevant_scope, evidence,
                                          node_expectation, node_likelihoods, node_status)[0]
              for child in node.children if
              len(relevant_scope.intersection(child.scope)) > 0], axis=1)
@@ -110,7 +112,7 @@ def expectation_recursive_batch(node, feature_scope, inverted_features, relevant
             return result, node_status
 
         llchildren = np.concatenate(
-            [expectation_recursive_batch(child, feature_scope, inverted_features, relevant_scope, evidence,
+            [expectation_recursive_batch(return_node_status, child, feature_scope, inverted_features, relevant_scope, evidence,
                                          node_expectation, node_likelihoods, node_status)[0]
              for child in node.children], axis=1)
 
@@ -179,14 +181,14 @@ def nanproduct(product, factor):
             return product * factor
 
 
-def expectation_recursive(node, feature_scope, inverted_features, relevant_scope, evidence, node_expectation,
+def expectation_recursive(return_node_status, node, feature_scope, inverted_features, relevant_scope, evidence, node_expectation,
                           node_likelihoods, node_status):
     if isinstance(node, Product):
 
         product = np.nan
         for child in node.children:
             if len(relevant_scope.intersection(child.scope)) > 0:
-                factor, node_status = expectation_recursive(child, feature_scope, inverted_features, relevant_scope, evidence,
+                factor, node_status = expectation_recursive(return_node_status, child, feature_scope, inverted_features, relevant_scope, evidence,
                                                node_expectation, node_likelihoods, node_status)
                 product = nanproduct(product, factor)
                 
@@ -209,7 +211,7 @@ def expectation_recursive(node, feature_scope, inverted_features, relevant_scope
 
         llchildren = []
         for child in node.children:
-            c, ns = expectation_recursive(child, feature_scope, inverted_features, relevant_scope, evidence,
+            c, ns = expectation_recursive(return_node_status, child, feature_scope, inverted_features, relevant_scope, evidence,
                                             node_expectation, node_likelihoods, node_status)
             llchildren.append(c)
 

@@ -13,11 +13,11 @@ from itertools import combinations
 import numpy as np
 from spn.structure.Base import assign_ids, Product
 
-from aqp_spn.aqp_leaves import Sum
-from aqp_spn.custom_spflow.custom_transform_structure import Prune
-from aqp_spn.custom_spflow.custom_validity import is_valid
-from aqp_spn.custom_spflow.utils import compute_cartesian_product_completeness, default_slicer
-from aqp_spn.util.bloom_filter import BloomFilter
+from ..aqp_leaves import Sum
+from ..custom_spflow.custom_transform_structure import Prune
+from ..custom_spflow.custom_validity import is_valid
+from ..custom_spflow.utils import compute_cartesian_product_completeness, default_slicer
+from ..util.bloom_filter import BloomFilter
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ except:
 
     perf_counter = time
 
-parallel = True
+parallel = False
 
 if parallel:
     cpus = max(1, os.cpu_count() - 2)  # - int(os.getloadavg()[2])
@@ -284,6 +284,7 @@ def learn_structure(
                 local_children_params.append((child_data_slice, ds_context, [scope[col]]))
 
             result_nodes = pool.starmap(create_leaf, local_children_params)
+            #result_nodes = create_leaf(*local_children_params)
 
             for child_pos, child in zip(local_tasks, result_nodes):
                 node.children[child_pos] = child

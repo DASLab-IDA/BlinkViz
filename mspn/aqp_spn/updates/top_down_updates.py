@@ -2,12 +2,12 @@ import logging
 
 import numpy as np
 from spn.structure.Base import Product
-from aqp_spn.aqp_spn import AQPSPN
+from ..aqp_spn import AQPSPN
 #from aqp_spn.aqp_leaves import Sum, Categorical, IdentityNumericLeaf
 from scipy.spatial import distance
 
-from rspn.structure.base import Sum
-from rspn.structure.leaves import Categorical, IdentityNumericLeaf
+from ...rspn.structure.base import Sum
+from ...rspn.structure.leaves import Categorical, IdentityNumericLeaf
 
 logger = logging.getLogger(__name__)
 

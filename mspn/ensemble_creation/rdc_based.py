@@ -9,12 +9,12 @@ import numpy as np
 from spn.algorithms.splitting.RDC import rdc_cca, rdc_transformer
 from spn.structure.Base import Context
 
-from aqp_spn.aqp_spn import AQPSPN
-from data_preparation.join_data_preparation import JoinDataPreparator
-from ensemble_compilation.physical_db import DBConnection
-from ensemble_compilation.spn_ensemble import SPNEnsemble
-from ensemble_creation.naive import RATIO_MIN_INSTANCE_SLICE
-from ensemble_creation.utils import create_random_join
+from ..aqp_spn.aqp_spn import AQPSPN
+from ..data_preparation.join_data_preparation import JoinDataPreparator
+from ..ensemble_compilation.physical_db import DBConnection
+from ..ensemble_compilation.spn_ensemble import SPNEnsemble
+from .naive import RATIO_MIN_INSTANCE_SLICE
+from .utils import create_random_join
 
 logger = logging.getLogger(__name__)
 

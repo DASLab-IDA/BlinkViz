@@ -8,9 +8,9 @@ import numpy as np
 from spn.algorithms.StructureLearning import default_slicer
 from spn.structure.Base import assign_ids, Product
 
-from rspn.algorithms.transform_structure import Prune
-from rspn.algorithms.validity.validity import is_valid
-from rspn.structure.base import Sum
+from ..algorithms.transform_structure import Prune
+from ..algorithms.validity.validity import is_valid
+from ..structure.base import Sum
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ except:
 
     perf_counter = time
 
-parallel = True
+parallel = False
 
 if parallel:
     cpus = max(1, os.cpu_count() - 2)  # - int(os.getloadavg()[2])
@@ -264,6 +264,7 @@ def learn_structure(
                 local_children_params.append((child_data_slice, ds_context, [scope[col]]))
 
             result_nodes = pool.starmap(create_leaf, local_children_params)
+            #result_nodes = create_leaf(*local_children_params)
 
             for child_pos, child in zip(local_tasks, result_nodes):
                 node.children[child_pos] = child

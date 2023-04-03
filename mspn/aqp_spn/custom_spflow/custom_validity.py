@@ -9,7 +9,7 @@ import numpy as np
 from math import isclose
 from spn.structure.Base import get_nodes_by_type, Product
 
-from aqp_spn.aqp_leaves import Sum, IdentityNumericLeaf
+from ..aqp_leaves import Sum, IdentityNumericLeaf
 
 logger = logging.getLogger(__name__)
 

@@ -6,15 +6,17 @@ import time
 
 import numpy as np
 
-from rspn.code_generation.generate_code import generate_ensemble_code
-from data_preparation.join_data_preparation import prepare_sample_hdf
-from data_preparation.prepare_single_tables import prepare_all_tables
-from ensemble_compilation.spn_ensemble import read_ensemble
-from ensemble_creation.naive import create_naive_all_split_ensemble, naive_every_relationship_ensemble
-from ensemble_creation.rdc_based import candidate_evaluation
-from evaluation.confidence_interval_evaluation import evaluate_confidence_intervals
-from schemas.flights.schema import gen_flights_500M_schema
-from schemas.ssb.schema import gen_sf50_ssb_schema
+from mspn.rspn.code_generation.generate_code import generate_ensemble_code
+from mspn.data_preparation.join_data_preparation import prepare_sample_hdf
+from mspn.data_preparation.prepare_single_tables import prepare_all_tables
+from mspn.ensemble_compilation.spn_ensemble import read_ensemble
+from mspn.ensemble_creation.naive import create_naive_all_split_ensemble, naive_every_relationship_ensemble
+from mspn.ensemble_creation.rdc_based import candidate_evaluation
+from mspn.evaluation.confidence_interval_evaluation import evaluate_confidence_intervals
+from mspn.schemas.flights.schema import gen_flights_500M_schema
+from mspn.schemas.ssb.schema import gen_sf50_ssb_schema
+
+import faulthandler;faulthandler.enable()
 
 np.random.seed(1)
 
@@ -176,7 +178,7 @@ if __name__ == '__main__':
 
     # Read pre-trained ensemble and evaluate cardinality queries scale
     if args.evaluate_cardinalities_scale:
-        from evaluation.cardinality_evaluation import evaluate_cardinalities
+        from mspn.evaluation.cardinality_evaluation import evaluate_cardinalities
 
         for i in [3, 4, 5, 6]:
             for j in [1, 2, 3, 4, 5]:
@@ -192,7 +194,7 @@ if __name__ == '__main__':
 
     # Read pre-trained ensemble and evaluate cardinality queries
     if args.evaluate_cardinalities:
-        from evaluation.cardinality_evaluation import evaluate_cardinalities
+        from mspn.evaluation.cardinality_evaluation import evaluate_cardinalities
 
         logging.info(
             f"maqp(evaluate_cardinalities: database_name={args.database_name}, target_path={args.target_path})")
@@ -205,19 +207,19 @@ if __name__ == '__main__':
 
     # Compute ground truth for AQP queries
     if args.aqp_ground_truth:
-        from evaluation.aqp_evaluation import compute_ground_truth
+        from mspn.evaluation.aqp_evaluation import compute_ground_truth
 
         compute_ground_truth(args.target_path, args.database_name, query_filename=args.query_file_location)
 
     # Compute ground truth for Cardinality queries
     if args.cardinalities_ground_truth:
-        from evaluation.cardinality_evaluation import compute_ground_truth
+        from mspn.evaluation.cardinality_evaluation import compute_ground_truth
 
         compute_ground_truth(args.query_file_location, args.target_path, args.database_name)
 
     # Read pre-trained ensemble and evaluate AQP queries
     if args.evaluate_aqp_queries:
-        from evaluation.aqp_evaluation import evaluate_aqp_queries
+        from mspn.evaluation.aqp_evaluation import evaluate_aqp_queries
 
         evaluate_aqp_queries(args.return_node_status, args.target_ns_path, args.ensemble_location, args.query_file_location, args.target_path, schema,
                              args.ground_truth_file_location, args.rdc_spn_selection, args.pairwise_rdc_path,

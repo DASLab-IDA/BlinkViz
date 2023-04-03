@@ -6,7 +6,7 @@ from spn.algorithms.splitting.Base import preproc, split_data_by_clusters
 from spn.algorithms.splitting.RDC import getIndependentRDCGroups_py
 from spn.structure.StatisticalTypes import MetaType
 
-from rspn.structure.leaves import IdentityNumericLeaf, Categorical
+from ..structure.leaves import IdentityNumericLeaf, Categorical
 
 logger = logging.getLogger(__name__)
 MAX_UNIQUE_LEAF_VALUES = 10000
@@ -50,7 +50,7 @@ def learn_mspn(
     if rand_gen is None:
         rand_gen = np.random.RandomState(17)
 
-    from rspn.learning.structure_learning import get_next_operation, learn_structure
+    from .structure_learning import get_next_operation, learn_structure
 
     def l_mspn(data, ds_context, cols, rows, min_instances_slice, threshold, ohe):
         split_cols, split_rows = get_splitting_functions(max_sampling_threshold_rows, max_sampling_threshold_cols, cols,
@@ -119,7 +119,7 @@ def create_custom_leaf(data, ds_context, scope):
 def get_splitting_functions(max_sampling_threshold_rows, max_sampling_threshold_cols, cols, rows, ohe, threshold,
                             rand_gen, n_jobs):
     from spn.algorithms.splitting.Clustering import get_split_rows_TSNE, get_split_rows_GMM
-    from spn.algorithms.splitting.PoissonStabilityTest import get_split_cols_poisson_py
+    #from spn.algorithms.splitting.PoissonStabilityTest import get_split_cols_poisson_py
     from spn.algorithms.splitting.RDC import get_split_rows_RDC_py
 
     # split the columns
@@ -130,7 +130,8 @@ def get_splitting_functions(max_sampling_threshold_rows, max_sampling_threshold_
                                                threshold=threshold,
                                                rand_gen=rand_gen, ohe=ohe, n_jobs=n_jobs)
         elif cols == "poisson":
-            split_cols = get_split_cols_poisson_py(threshold, n_jobs=n_jobs)
+            pass
+            #split_cols = get_split_cols_poisson_py(threshold, n_jobs=n_jobs)
         else:
             raise AssertionError("unknown columns splitting strategy type %s" % str(cols))
     else:

@@ -1,8 +1,8 @@
 import logging
 
-from aqp_spn.aqp_spn import AQPSPN
-from data_preparation.join_data_preparation import JoinDataPreparator
-from ensemble_compilation.spn_ensemble import SPNEnsemble
+from ..aqp_spn.aqp_spn import AQPSPN
+from ..data_preparation.join_data_preparation import JoinDataPreparator
+from ..ensemble_compilation.spn_ensemble import SPNEnsemble
 
 logger = logging.getLogger(__name__)
 

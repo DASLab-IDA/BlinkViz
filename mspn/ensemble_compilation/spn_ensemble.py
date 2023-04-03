@@ -5,6 +5,9 @@ import pickle
 import random
 from collections import deque
 from time import perf_counter
+import sys
+import os
+#sys.path.append("..")
 
 import numpy as np
 from spn.structure.Base import Leaf
@@ -68,17 +71,17 @@ class CombineSPN:
             self.table_set.add(relationship_obj.start)
             self.table_set.add(relationship_obj.end)
 
-    def evaluate_indicator_expectation(self, indicator_expectation):
+    def evaluate_indicator_expectation(self, return_node_status, indicator_expectation):
         raise NotImplementedError
 
     def evaluate_expectation(self, expectation):
         raise NotImplementedError
 
-    def evaluate_indicator_expectation_batch(self, indicator_expectation, group_bys, group_by_tuples,
+    def evaluate_indicator_expectation_batch(self, return_node_status, indicator_expectation, group_bys, group_by_tuples,
                                              standard_deviations=False):
         raise NotImplementedError
 
-    def evaluate_expectation_batch(self, expectation, group_bys, group_by_tuples, standard_deviations=False):
+    def evaluate_expectation_batch(self, return_node_status, expectation, group_bys, group_by_tuples, standard_deviations=False):
         raise NotImplementedError
 
     def relevant_conditions(self, query, merged_tables=None):
@@ -304,7 +307,7 @@ def _build_reverse_spn_dict(spn):
             spn.table_meta_data[table]['fd_dict'] = dict()
 
 
-def evaluate_factors_group_by(artificially_added_conditions, confidence_intervals, debug,
+def evaluate_factors_group_by(return_node_status, artificially_added_conditions, confidence_intervals, debug,
                               factor_values_full, factors_full, result_tuples, technical_group_by_scopes,
                               confidence_interval_samples=None):
     # see if we can exclude inverted factors, quadratic complexity but usually only very few factors
@@ -382,7 +385,7 @@ def evaluate_factors_group_by(artificially_added_conditions, confidence_interval
                                                             different_specific_result_tuples]
 
                 _, unprojected_exps = \
-                    factor.spn.evaluate_indicator_expectation_batch(factor,
+                    factor.spn.evaluate_indicator_expectation_batch(return_node_status, factor,
                                                                     specific_technical_group_by_scopes,
                                                                     different_specific_result_tuples_as_list,
                                                                     standard_deviations=False)
@@ -468,7 +471,7 @@ def std_of_products(exps, stds):
     return np.sqrt(product_left - product_right)
 
 
-def evaluate_factors(dry_run, factors_full, cached_expecation_vals, confidence_intervals=False,
+def evaluate_factors(return_node_status, dry_run, factors_full, cached_expecation_vals, confidence_intervals=False,
                      confidence_interval_samples=None, gen_code_stats=None):
     # see if we can exclude inverted factors, quadratic complexity but usually only very few factors
     factors_to_be_deleted = set()
@@ -512,7 +515,7 @@ def evaluate_factors(dry_run, factors_full, cached_expecation_vals, confidence_i
                 if cached_expecation_vals.get(hash(factor)) is not None:
                     exp = cached_expecation_vals[hash(factor)]
                 else:
-                    _, exp = factor.spn.evaluate_indicator_expectation(factor, gen_code_stats=gen_code_stats,
+                    _, exp = factor.spn.evaluate_indicator_expectation(return_node_status, factor, gen_code_stats=gen_code_stats,
                                                                        standard_deviations=False)
                     cached_expecation_vals[hash(factor)] = exp
 
@@ -526,7 +529,7 @@ def evaluate_factors(dry_run, factors_full, cached_expecation_vals, confidence_i
                 if not confidence_intervals and cached_expecation_vals.get(hash(factor)) is not None:
                     std, exp = cached_expecation_vals[hash(factor)]
                 else:
-                    std, exp = factor.spn.evaluate_expectation(factor, standard_deviations=confidence_intervals,
+                    std, exp = factor.spn.evaluate_expectation(return_node_status, factor, standard_deviations=confidence_intervals,
                                                                gen_code_stats=gen_code_stats)
                     if confidence_intervals:
                         ci_index = exps_counter + 2
@@ -614,7 +617,7 @@ class SPNEnsemble:
         """Add an SPN to ensemble"""
         self.spns.append(spn)
 
-    def _cardinality_greedy(self, query, rdc_spn_selection=False, rdc_attribute_dict=None, dry_run=False,
+    def _cardinality_greedy(self, return_node_status, query, rdc_spn_selection=False, rdc_attribute_dict=None, dry_run=False,
                             merge_indicator_exp=True, exploit_overlapping=False, return_factor_values=False,
                             exploit_incoming_multipliers=True, prefer_disjunct=False, gen_code_stats=None):
         """
@@ -624,7 +627,7 @@ class SPNEnsemble:
         first_spn, next_mergeable_relationships, next_mergeable_tables = self._greedily_select_first_cardinality_spn(
             query, rdc_spn_selection=rdc_spn_selection, rdc_attribute_dict=rdc_attribute_dict)
 
-        return self._cardinality_with_injected_start(query, first_spn, next_mergeable_relationships,
+        return self._cardinality_with_injected_start(return_node_status, query, first_spn, next_mergeable_relationships,
                                                      next_mergeable_tables, rdc_spn_selection=rdc_spn_selection,
                                                      rdc_attribute_dict=rdc_attribute_dict,
                                                      dry_run=dry_run,
@@ -796,6 +799,7 @@ class SPNEnsemble:
                 artificially_added_conditions.append((table, condition,))
                 prototype_query.add_where_condition(table, condition)
             # predict prototype_query
+            print("rdc_spn_selection:", rdc_spn_selection)
             _, factors, cardinalities, factor_values, node_status = self.cardinality(return_node_status, prototype_query,
                                                                         rdc_spn_selection=rdc_spn_selection,
                                                                         pairwise_rdc_path=pairwise_rdc_path,
@@ -821,18 +825,18 @@ class SPNEnsemble:
                                                                return_factor_values=True,
                                                                exploit_incoming_multipliers=exploit_incoming_multipliers,
                                                                prefer_disjunct=True)
-                cardinality_stds, _, redundant_cardinality, _ = evaluate_factors(False, factors_no_overlap,
+                cardinality_stds, _, redundant_cardinality, _ = evaluate_factors(return_node_status, False, factors_no_overlap,
                                                                                  self.cached_expecation_vals,
                                                                                  confidence_intervals=True,
                                                                                  confidence_interval_samples=confidence_sample_size)
             if len(query.group_bys) > 0:
                 _, cardinalities = evaluate_factors_group_by(
-                    artificially_added_conditions, False,
+                    return_node_status, artificially_added_conditions, False,
                     debug, factor_values, factors, result_tuples,
                     technical_group_by_scopes)
                
                 if confidence_intervals:
-                    _, factors_no_overlap, _, factor_values_no_overlap = self.cardinality(prototype_query,
+                    _, factors_no_overlap, _, factor_values_no_overlap = self.cardinality(return_node_status, prototype_query,
                                                                                           rdc_spn_selection=rdc_spn_selection,
                                                                                           pairwise_rdc_path=pairwise_rdc_path,
                                                                                           dry_run=False,
@@ -843,7 +847,7 @@ class SPNEnsemble:
                                                                                           exploit_incoming_multipliers=exploit_incoming_multipliers,
                                                                                           prefer_disjunct=True)
                     cardinality_stds, _ = evaluate_factors_group_by(
-                        artificially_added_conditions, confidence_intervals,
+                        return_node_status, artificially_added_conditions, confidence_intervals,
                         debug, factor_values_no_overlap, factors_no_overlap, result_tuples,
                         technical_group_by_scopes, confidence_interval_samples=confidence_sample_size)
 
@@ -889,7 +893,7 @@ class SPNEnsemble:
                     expectation_spn, expectation = self._greedily_select_expectation_spn(query, factors)
                     # compute avg
                     if confidence_intervals:
-                        current_stds, aggregation_result = expectation_spn.evaluate_expectation_batch(
+                        current_stds, aggregation_result = expectation_spn.evaluate_expectation_batch(return_node_status,
                             expectation,
                             technical_group_by_scopes,
                             result_tuples,
@@ -897,7 +901,7 @@ class SPNEnsemble:
                         avg_stds = np.sqrt(np.square(avg_stds) + np.square(current_stds))
 
                     else:
-                        _, aggregation_result = expectation_spn.evaluate_expectation_batch(expectation,
+                        _, aggregation_result = expectation_spn.evaluate_expectation_batch(return_node_status, expectation,
                                                                                            technical_group_by_scopes,
                                                                                            result_tuples)
                     exp_end_t = perf_counter()
@@ -969,7 +973,7 @@ class SPNEnsemble:
             return None, result_values, expectation_spn, expectation
         return None, result_values
 
-    def cardinality(self, query, rdc_spn_selection=False, pairwise_rdc_path=None,
+    def cardinality(self,return_node_status, query, rdc_spn_selection=False, pairwise_rdc_path=None,
                     dry_run=False, merge_indicator_exp=True, max_variants=10, exploit_overlapping=False,
                     return_factor_values=False, exploit_incoming_multipliers=True, prefer_disjunct=False,
                     gen_code_stats=None):
@@ -991,7 +995,7 @@ class SPNEnsemble:
         possible_starts = self._possible_first_spns(query)
         # no where conditions given
         if len(possible_starts) == 0 or max_variants == 1:
-            return self._cardinality_greedy(query, rdc_spn_selection=rdc_spn_selection,
+            return self._cardinality_greedy(return_node_status, query, rdc_spn_selection=rdc_spn_selection,
                                             rdc_attribute_dict=rdc_attribute_dict,
                                             dry_run=dry_run, merge_indicator_exp=merge_indicator_exp,
                                             exploit_overlapping=exploit_overlapping,
@@ -1003,7 +1007,7 @@ class SPNEnsemble:
             possible_starts = possible_starts[:max_variants]
         results = []
         for first_spn, next_mergeable_relationships, next_mergeable_tables in possible_starts:
-            results.append(self._cardinality_with_injected_start(query, first_spn, next_mergeable_relationships,
+            results.append(self._cardinality_with_injected_start(return_node_status, query, first_spn, next_mergeable_relationships,
                                                                  next_mergeable_tables,
                                                                  rdc_spn_selection=rdc_spn_selection,
                                                                  rdc_attribute_dict=rdc_attribute_dict,
@@ -1019,7 +1023,7 @@ class SPNEnsemble:
         results.sort(key=lambda x: x[2])
         return results[int(len(results) / 2)]
 
-    def _cardinality_with_injected_start(self, query, first_spn, next_mergeable_relationships, next_mergeable_tables,
+    def _cardinality_with_injected_start(self, return_node_status, query, first_spn, next_mergeable_relationships, next_mergeable_tables,
                                          rdc_spn_selection=False, rdc_attribute_dict=None, dry_run=False,
                                          merge_indicator_exp=True, exploit_overlapping=False,
                                          return_factor_values=False, exploit_incoming_multipliers=True,
@@ -1215,7 +1219,7 @@ class SPNEnsemble:
 
             query.relationship_set -= set(next_mergeable_relationships)
 
-        values, cardinality, formula = evaluate_factors(dry_run, factors, self.cached_expecation_vals,
+        values, cardinality, formula = evaluate_factors(return_node_status, dry_run, factors, self.cached_expecation_vals,
                                                         gen_code_stats=gen_code_stats)
 
         if not return_factor_values:
