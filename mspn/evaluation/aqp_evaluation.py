@@ -229,7 +229,7 @@ def evaluate_group_by(aqp_result, true_result, confidence_intervals, medians=Fal
         #     print("type of aqp_row[:-1]:", type(aqp_row[:-1]))
 
 
-        # 经过之前的变换aqp_row变成了np.record类型，不能用[:-1]的方式切片，需要转为tuple类型
+        # aqp_row: np.record -> transformed into tuple
         matching_aqp_rows = [(matching_idx, aqp_row) for matching_idx, aqp_row in enumerate(aqp_result)
                              if tuple(aqp_row)[:-1] == group_by_attributes]
         assert len(matching_aqp_rows) <= 1, "Multiple possible group by attributes found."
@@ -349,7 +349,6 @@ def stratified_evaluate(true_result, aqp_result, schema, query_str, query):
     if len(common_group)==0:
         return aqp_result
     else:
-        # 如果聚合类型是COUNT类型或者SUM，并且group by其中任一或多个属性，需要除以对应的sample ratio
         if query.query_type == QueryType.CARDINALITY or any(
                 [aggregation_type == AggregationType.SUM or aggregation_type == AggregationType.COUNT
                 for _, aggregation_type, _ in query.aggregation_operations]):

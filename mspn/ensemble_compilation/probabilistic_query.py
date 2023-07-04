@@ -11,7 +11,6 @@ class FactorType(Enum):
 class IndicatorExpectation:
     """
     Represents E[1_{conditions} * 1/ denominator_multipliers].
-    如单表上就是满足该条件的数目/multipliers
     """
 
     def __init__(self, denominator_multipliers, conditions, nominator_multipliers=None, spn=None, inverse=False,

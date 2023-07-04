@@ -256,7 +256,6 @@ class AQPSPN(CombineSPN, RSPN):
         feature_scope = []
         replaced_features = []
         # check if group by attribute is in relevant attributes, could also be omitted because of FD redundancy
-        # 如果两个group by的属性是relevant，那么就可以按照FD处理
         for feature in features:
             if feature in self.column_names:
                 feature_scope.append(self.column_names.index(feature))

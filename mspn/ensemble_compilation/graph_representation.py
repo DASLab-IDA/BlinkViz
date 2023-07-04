@@ -11,21 +11,21 @@ class Table:
 
         self.table_name = table_name
         self.table_size = table_size
-        self.primary_key = primary_key # 主键
+        self.primary_key = primary_key 
 
         self.csv_file_location = csv_file_location
         self.attributes = attributes
-        self.irrelevant_attributes = irrelevant_attributes # 无关属性列表，之后会被舍弃
+        self.irrelevant_attributes = irrelevant_attributes
         if irrelevant_attributes is None:
             self.irrelevant_attributes = []
-        self.keep_fk_attributes = keep_fk_attributes # 外键列表
+        self.keep_fk_attributes = keep_fk_attributes
         if keep_fk_attributes is None:
             self.keep_fk_attributes = []
-        self.no_compression = no_compression # 未被压缩的属性？
+        self.no_compression = no_compression
         if no_compression is None:
             self.no_compression = []
 
-        if fd_list is None: # 函数依赖列表，每个元素形如(table_name.fd_source, table_name.fd_dest)
+        if fd_list is None: # format: (table_name.fd_source, table_name.fd_dest)
             self.fd_list = []
         else:
             self.fd_list = [(table_name + '.' + fd_source, table_name + '.' + fd_dest) for fd_source, fd_dest in
@@ -43,11 +43,11 @@ class Table:
         self.incoming_relationships = []
         self.sample_rate = sample_rate
 
-    # SchemaGraph中孩子节点与当前节点相连的属性（也就是fd_source）
+    # fd_source
     def children_fd_attributes(self, attribute):
         return [fd_source for fd_source, fd_dest in self.fd_list if fd_dest == attribute]
 
-    # SchemaGraph中父节点与当前节点相连的属性（也就是fd_dest）
+    # fd_dest
     def parent_fd_attributes(self, attribute):
         return [fd_dest for fd_source, fd_dest in self.fd_list if fd_source == attribute]
 
@@ -65,7 +65,7 @@ class Relationship:
         # matching tuples in FULL OUTER JOIN
         self.multiplier_attribute_name = multiplier_attribute_name
 
-        # matching tuples (not NULL) 有的全外连接后是空的，这里记录的是非空的
+        # matching tuples (not NULL)
         self.multiplier_attribute_name_nn = multiplier_attribute_name + '_nn'
 
         self.identifier = self.start + '.' + self.start_attr + \
@@ -114,7 +114,7 @@ class AggregationType(Enum):
     SUM = 0
     AVG = 1
     COUNT = 2
-    BIN = 3 # 分箱：先执行完不带分箱的查询，然后将group合并，跟SQL执行逻辑不同
+    BIN = 3
 
 
 class AggregationOperationType(Enum):
@@ -136,7 +136,7 @@ class Query:
         self.conditions = []
         self.aggregation_operations = []
         self.group_bys = []
-        self.bins = [] # 存放分箱的query信息，每个信息都是元组形式(attribute_name, bin_size)
+        self.bins = [] # (attribute_name, bin_size)
 
     # ?
     def remove_conditions_for_attributes(self, table, attributes):
@@ -152,7 +152,6 @@ class Query:
         self.conditions = [(cond_table, condition) for cond_table, condition in self.conditions
                            if not (cond_table == table and conflicting(condition))]
 
-    # 复制query
     def copy_cardinality_query(self):
         query = Query(self.schema_graph)
         query.table_set = copy.copy(self.table_set)

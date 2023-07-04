@@ -2,7 +2,6 @@ import numpy as np
 from spn.structure.Base import Leaf
 from spn.structure.leaves.parametric.Parametric import Parametric
 
-# Categorical类型的叶子节点，记录每个离散值的概率（但是离散值本身好像没有记录？）
 class Categorical(Parametric):
     """
     Implements a univariate categorical distribution with k parameters
@@ -14,14 +13,12 @@ class Categorical(Parametric):
     type = Type.CATEGORICAL
     # factory function for creating tuple subclasses with named fields
     # collections.namedtuple(typename, field_names, *, rename=False, defaults=None, module=None)
-    # 下面这句等于创建了一个变量c = Categorical(p)，p是probabilities
     property_type = namedtuple("Categorical", "p") 
 
 
     def __init__(self, p, null_value, scope, cardinality=0):
         Parametric.__init__(self, type(self).type, scope=scope)
 
-        # parameters：参数之和应为1
         assert np.isclose(np.sum(p), 1), "Probabilities p shall sum to 1"
         if not isinstance(p, np.ndarray):
             p = np.array(p)
@@ -44,14 +41,14 @@ class Categorical(Parametric):
 class IdentityNumericLeaf(Leaf):
     def __init__(self, unique_vals, probabilities, null_value, scope, cardinality=0):
         """
-        Instead of histogram remember individual values. 记录所有可能的取值，不单单是直方图
-        :param unique_vals: all possible values in leaf 叶子中所有可能值
-        :param mean: mean of not null values 均值
-        :param inverted_mean: inverted mean of not null values 均值的倒数
-        :param square_mean: mean of squared not null values 均值的平方
-        :param inverted_square_mean: mean of 1/squared not null values 均值的平方的倒数
-        :param prob_sum: cumulative sum of probabilities 累积概率和
-        :param null_value_prob: proportion of null values in the leaf 空值比例
+        Instead of histogram remember individual values. 
+        :param unique_vals: all possible values in leaf 
+        :param mean: mean of not null values 
+        :param inverted_mean: inverted mean of not null values 
+        :param square_mean: mean of squared not null values 
+        :param inverted_square_mean: mean of 1/squared not null values 
+        :param prob_sum: cumulative sum of probabilities 
+        :param null_value_prob: proportion of null values in the leaf 
         :param scope:
         """
         Leaf.__init__(self, scope=scope)

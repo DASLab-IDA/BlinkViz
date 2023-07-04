@@ -389,10 +389,10 @@ def evaluate_factors_group_by(return_node_status, artificially_added_conditions,
                                                                     specific_technical_group_by_scopes,
                                                                     different_specific_result_tuples_as_list,
                                                                     standard_deviations=False)
-                # 保存每个result跟result_tuple的对应关系
+                # save the relationship between results adn result_tuples
                 result_medium_dict = {}
                 exps = np.ones((len(result_tuples), 1))
-                # 排序
+                # sort
                 for idx, result_tuple in enumerate(result_tuples):
                     projected_tuple = project_tuple(result_tuple, specific_group_by_scopes)
                     unprojected_idx = specific_result_dict[projected_tuple]
@@ -640,34 +640,28 @@ class SPNEnsemble:
 
     def _evaluate_group_by_spn_ensembles(self, query):
         """
-        如何理解这段注释？（先看代码！）
         Go over all Group By attributes, find best SPN with maximal where conditions. Merge features that have same SPN.
         """
 
-        spn_group_by_dict = dict() # 一个字典，存储的是(grouping_spn: [grouping_attributes]),value是一个列表
-        group_by_list = [table + '.' + attribute for table, attribute in query.group_bys] # 可以包含不同表的属性
+        spn_group_by_dict = dict() # dict: (grouping_spn: [grouping_attributes]); value: list
+        group_by_list = [table + '.' + attribute for table, attribute in query.group_bys]
         for i, grouping_attribute in enumerate(group_by_list):
             max_matching_where_cond = -1
             grouping_spn = None
             # search for spn with maximal matching where conditions
-            # 寻找能覆盖最多where条件的SPN
-            for spn in self.spns: # 遍历所有SPN
-                potential_group_by_columns = set(spn.column_names) # 当前SPN的所有列都视为potential group by columns
+            for spn in self.spns:
+                potential_group_by_columns = set(spn.column_names)
                 for table in spn.table_set: # 当前SPN包括的表的集合
                     potential_group_by_columns = potential_group_by_columns.union(
                         spn.table_meta_data[table]['fd_dict'].keys())
-                    # union：返回两个集合的并集，且去重，此处为关联外键
 
-                # 如果grouping_attribute不在其中，忽略
                 if grouping_attribute not in potential_group_by_columns:
                     continue
-                # table_where_condition_dict.keys()返回的是where condition中涉及到的表名，intersection返回两个集合的交集
-                # where_conditions存的是where条件中涉及到并且在当前SPN中有的表名
+                # table_where_condition_dict.keys(): returns the column names where condition includes
                 where_conditions = set(query.table_where_condition_dict.keys()).intersection(spn.table_set)
-                matching_spns = 0 # 包含当前grouping attribute的spn的数量
+                matching_spns = 0
                 if spn in spn_group_by_dict.keys(): 
                     matching_spns = 1
-                # 决定使用哪个spn来对当前grouping attribute执行分组
                 if len(where_conditions) > max_matching_where_cond or \
                         (len(where_conditions) == max_matching_where_cond and matching_spns > 0):
                     max_matching_where_cond = len(where_conditions)
@@ -685,7 +679,6 @@ class SPNEnsemble:
             for attribute in attribute_list:
                 group_by_permutation[group_by_list.index(attribute)] = attribute_counter
                 attribute_counter += 1
-        # 看一下group_by_permutation里面是什么内容
         #print("group_by_permutation:", str(group_by_permutation))
         #print("dict_items:", str(dict_items))
 

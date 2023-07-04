@@ -157,9 +157,8 @@ def parse_query(query_str, schema):
     print("utils.parse_query original query_str:", query_str)
     print("utils.parse_query original query_str type:", type(query_str))
 
-    # 判断是否分箱&储存相关参数
-    #pattern = re.compile(r'[(](.*?)[)]') # 匹配所有形如round()的字符串子串
-    pattern = re.compile(r'round[(](.*?)[)]') # 匹配所有形如round()的字符串子串
+    #pattern = re.compile(r'[(](.*?)[)]')
+    pattern = re.compile(r'round[(](.*?)[)]')
     bin_desc = pattern.findall(query_str)
     print("util.parse_query bin_desc:", bin_desc)
     if len(bin_desc)>0:
@@ -172,10 +171,8 @@ def parse_query(query_str, schema):
             print("util.parse_query add_bins:", bin_attr, float(bin_size))
             query.add_bins(bin_attr, float(bin_size))
 
-            # 去除分箱
             query_str = query_str.replace("round("+each_desc+")", bin_attr)
 
-        # 打印修改后的query（去除分箱操作）
         print("utils.parse_query prepared query_str:", query_str)
 
     # split query into part before from
@@ -243,9 +240,6 @@ def parse_query(query_str, schema):
     count_statements = [token for token in tokens_before_from if
                         token.normalized == 'COUNT(*)' or token.normalized == 'count(*)']
     assert len(count_statements) <= 1, "Several count statements are currently not supported."
-    # 如果count_statements刚好有一个，那么这是一个单纯的基数估计问题，否则是AQP问题，则还需要额外解析query
-    # 实际上，在增加分箱操作时，round既有可能出现在基数估计问题中，也有可能出现在AQP问题中，那么我们提前把这个分箱进行处理，然后剩下的按照之前的操作进行
-    # 所以：在query读进来的时候我们就要判断是否分箱并储存分箱参数了
     if len(count_statements) == 1:
         query.query_type = QueryType.CARDINALITY
     else:
