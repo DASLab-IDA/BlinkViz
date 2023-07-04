@@ -2,7 +2,7 @@
 
 BlinkViz is an approximate visualization approach by leveraging Mixed Sum-Product Networks to learn data distribution and corporating Neural Networks to enhance the performance. 
 
-This is the implementation described in (pdf link).
+This is the implementation described in (pdf [link](https://doi.org/10.1145/3543507.3583411)).
 
 ## Setup
 
@@ -30,13 +30,7 @@ The two modules are trained seperately.
     bash run_train.sh [job name]
     ````
     
-    Don't forget to check the configs.
 
-3. To combine the two model together by
-
-    ````
-    bash run_generate_ensemble.sh
-    ````
 
 ## Evaluation
 
@@ -44,7 +38,7 @@ We achieved an end-to-end approximate query processing. You can choose to evalua
 
 ### Single Query
 
-You could run the single query script and enter the interactive interface
+You could evalute single query by
 
 ````
 bash run_single_query.sh
@@ -54,16 +48,14 @@ The interface will prompt you to enter a query and return approximate query resu
 
 ### A Batch of Queries
 
-You could run the batch query script and put your queries in the specified location. Run
+You could evalute a batch of queries by
 
 ````
 bash run_batch_queries.sh
 ````
 
-The query results will exist in a CSV file.
+The results will be stored in a CSV file. 
 
 ## Visualization
 
-We also provide simple visualization options. You can choose to visualize the approximate answers in bar chart, line chart or pie chart.
-
-Please refer to our testbed on the Github (coming soon).
+We also provide simple visualization options. You can choose to visualize the approximate answers in bar chart, line chart or pie chart by set options 'visualize=True' and 'visType=\[bar|line|pie\]' in run_single_query.sh.
