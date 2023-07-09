@@ -226,7 +226,7 @@ class RSPN:
                                           range_conditions=range_conditions)
 
         not_null_conditions = self._augment_not_null_conditions(feature_scope, None)
-        n = self._probability(return_node_status, not_null_conditions) * self.full_sample_size
+        n, node_status_p = self._probability(return_node_status, not_null_conditions) * self.full_sample_size
 
         # shortcut: use binomial std if it is just a probability
         if len(feature_scope) == 0:
@@ -243,8 +243,8 @@ class RSPN:
 
         # Indeed divide by sample size of SPN not only qualifying tuples. Because this is not a conditional expectation.
         std = np.sqrt(v_x / n)
-        print("node_status_sq:", node_status_sq)
-        print("node_status_x:", node_status_x)
+        # print("node_status_sq:", node_status_sq)
+        # print("node_status_x:", node_status_x)
         return std, e_x, node_status_sq, node_status_x
 
     def _unnormalized_conditional_expectation(self, return_node_status, feature_scope, inverted_features=None, range_conditions=None,
@@ -358,6 +358,6 @@ class RSPN:
         denominator, node_status_de = self._indicator_expectation(return_node_status, normalizing_scope,
                                                   inverted_features=inverted_features_of_norm,
                                                   range_conditions=range_conditions)
-        print("node_status_no:", node_status_no)
-        print("node_status_de:", node_status_de)
+        # print("node_status_no:", node_status_no)
+        # print("node_status_de:", node_status_de)
         return std, nominator / denominator, node_status_no, node_status_de

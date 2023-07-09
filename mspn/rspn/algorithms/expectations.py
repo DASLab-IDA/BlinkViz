@@ -72,13 +72,13 @@ def expectation(return_node_status, spn, feature_scope, inverted_features, range
             result, ns = expectation_recursive(return_node_status, spn, feature_scope, inverted_features, relevant_scope, evidence,
                                         node_expectation, node_likelihoods, node_status)
             result = np.array([result])
-            print("74 ns:", ns)
+            # print("74 ns:", ns)
             return result, ns
     # full batch version
     node_status = dict()
     result, ns = expectation_recursive_batch(return_node_status, spn, feature_scope, inverted_features, relevant_scope, evidence,
                                        node_expectation, node_likelihoods, node_status)
-    print("79 ns:", ns)
+    # print("79 ns:", ns)
 
     return result, ns
 

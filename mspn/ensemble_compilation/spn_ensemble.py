@@ -74,7 +74,7 @@ class CombineSPN:
     def evaluate_indicator_expectation(self, return_node_status, indicator_expectation):
         raise NotImplementedError
 
-    def evaluate_expectation(self, expectation):
+    def evaluate_expectation(self, return_node_status, expectation):
         raise NotImplementedError
 
     def evaluate_indicator_expectation_batch(self, return_node_status, indicator_expectation, group_bys, group_by_tuples,
@@ -329,6 +329,7 @@ def evaluate_factors_group_by(return_node_status, artificially_added_conditions,
     card_start_t = perf_counter()
     # evaluate factors to obtain cardinality and formula
     cardinalities = np.ones((len(result_tuples), 1)) * factors[0]
+    node_status_list = []
 
     if confidence_intervals:
         # idea: compute indicator stds with bernoulli approach
@@ -384,11 +385,12 @@ def evaluate_factors_group_by(return_node_status, artificially_added_conditions,
                 different_specific_result_tuples_as_list = [project_list_tuple(result_tuple) for result_tuple in
                                                             different_specific_result_tuples]
 
-                _, unprojected_exps = \
+                _, unprojected_exps, node_status = \
                     factor.spn.evaluate_indicator_expectation_batch(return_node_status, factor,
                                                                     specific_technical_group_by_scopes,
                                                                     different_specific_result_tuples_as_list,
                                                                     standard_deviations=False)
+                node_status_list.append(node_status)
                 # save the relationship between results adn result_tuples
                 result_medium_dict = {}
                 exps = np.ones((len(result_tuples), 1))
@@ -416,8 +418,9 @@ def evaluate_factors_group_by(return_node_status, artificially_added_conditions,
                 if artificially_added_condition in factor.conditions:
                     factor.conditions.remove(artificially_added_condition)
 
-            stds, exps = factor.spn.evaluate_expectation_batch(factor, technical_group_by_scopes, result_tuples,
+            stds, exps, node_status = factor.spn.evaluate_expectation_batch(factor, technical_group_by_scopes, result_tuples,
                                                                standard_deviations=confidence_intervals)
+            node_status_list.append(node_status)
             cardinalities = np.multiply(exps, cardinalities)
             if confidence_intervals:
                 ci_index = exps_counter + 2
@@ -445,7 +448,7 @@ def evaluate_factors_group_by(return_node_status, artificially_added_conditions,
         logger.debug(f"\t\tcomputed all cardinalities in {card_end_t - card_start_t} secs.")
     logger.debug(f"\t\taverage_cardinality: {cardinalities.mean()}")
 
-    return cardinality_stds, cardinalities
+    return cardinality_stds, cardinalities, node_status_list
 
 
 def std_of_products(exps, stds):
@@ -515,7 +518,8 @@ def evaluate_factors(return_node_status, dry_run, factors_full, cached_expecatio
                 if cached_expecation_vals.get(hash(factor)) is not None:
                     exp = cached_expecation_vals[hash(factor)]
                 else:
-                    _, exp = factor.spn.evaluate_indicator_expectation(return_node_status, factor, gen_code_stats=gen_code_stats,
+                    # to be continue
+                    _, exp, node_status = factor.spn.evaluate_indicator_expectation(return_node_status, factor, gen_code_stats=gen_code_stats,
                                                                        standard_deviations=False)
                     cached_expecation_vals[hash(factor)] = exp
 
@@ -529,7 +533,7 @@ def evaluate_factors(return_node_status, dry_run, factors_full, cached_expecatio
                 if not confidence_intervals and cached_expecation_vals.get(hash(factor)) is not None:
                     std, exp = cached_expecation_vals[hash(factor)]
                 else:
-                    std, exp = factor.spn.evaluate_expectation(return_node_status, factor, standard_deviations=confidence_intervals,
+                    std, exp, node_status = factor.spn.evaluate_expectation(return_node_status, factor, standard_deviations=confidence_intervals,
                                                                gen_code_stats=gen_code_stats)
                     if confidence_intervals:
                         ci_index = exps_counter + 2
@@ -555,9 +559,9 @@ def evaluate_factors(return_node_status, dry_run, factors_full, cached_expecatio
         bernoulli_p = factor_exps[:, 1]
         factor_stds[:, 1] = np.sqrt(bernoulli_p * (1 - bernoulli_p) / confidence_interval_samples)
         cardinality_stds = std_of_products(factor_exps, factor_stds)
-        return cardinality_stds, values, cardinality, formula
+        return cardinality_stds, values, cardinality, formula, node_status
     else:
-        return values, cardinality, formula
+        return values, cardinality, formula, node_status
 
 
 def infer_column(condition):
@@ -792,7 +796,7 @@ class SPNEnsemble:
                 artificially_added_conditions.append((table, condition,))
                 prototype_query.add_where_condition(table, condition)
             # predict prototype_query
-            print("rdc_spn_selection:", rdc_spn_selection)
+            # print("rdc_spn_selection:", rdc_spn_selection)
             _, factors, cardinalities, factor_values, node_status = self.cardinality(return_node_status, prototype_query,
                                                                         rdc_spn_selection=rdc_spn_selection,
                                                                         pairwise_rdc_path=pairwise_rdc_path,
@@ -818,18 +822,18 @@ class SPNEnsemble:
                                                                return_factor_values=True,
                                                                exploit_incoming_multipliers=exploit_incoming_multipliers,
                                                                prefer_disjunct=True)
-                cardinality_stds, _, redundant_cardinality, _ = evaluate_factors(return_node_status, False, factors_no_overlap,
+                cardinality_stds, _, redundant_cardinality, _, node_status = evaluate_factors(return_node_status, False, factors_no_overlap,
                                                                                  self.cached_expecation_vals,
                                                                                  confidence_intervals=True,
                                                                                  confidence_interval_samples=confidence_sample_size)
             if len(query.group_bys) > 0:
-                _, cardinalities = evaluate_factors_group_by(
+                _, cardinalities, node_status = evaluate_factors_group_by(
                     return_node_status, artificially_added_conditions, False,
                     debug, factor_values, factors, result_tuples,
                     technical_group_by_scopes)
                
                 if confidence_intervals:
-                    _, factors_no_overlap, _, factor_values_no_overlap = self.cardinality(return_node_status, prototype_query,
+                    _, factors_no_overlap, _, factor_values_no_overlap, node_status = self.cardinality(return_node_status, prototype_query,
                                                                                           rdc_spn_selection=rdc_spn_selection,
                                                                                           pairwise_rdc_path=pairwise_rdc_path,
                                                                                           dry_run=False,
@@ -839,7 +843,7 @@ class SPNEnsemble:
                                                                                           return_factor_values=True,
                                                                                           exploit_incoming_multipliers=exploit_incoming_multipliers,
                                                                                           prefer_disjunct=True)
-                    cardinality_stds, _ = evaluate_factors_group_by(
+                    cardinality_stds, _, node_status = evaluate_factors_group_by(
                         return_node_status, artificially_added_conditions, confidence_intervals,
                         debug, factor_values_no_overlap, factors_no_overlap, result_tuples,
                         technical_group_by_scopes, confidence_interval_samples=confidence_sample_size)
@@ -855,7 +859,7 @@ class SPNEnsemble:
         if query.query_type == QueryType.CARDINALITY:
             if confidence_intervals:
                 return build_confidence_interval(cardinalities, cardinality_stds), cardinalities
-            return None, cardinalities
+            return None, cardinalities, node_status
 
         # case 2: SUM/AVG - compute AVG
         result_values = None
@@ -886,7 +890,7 @@ class SPNEnsemble:
                     expectation_spn, expectation = self._greedily_select_expectation_spn(query, factors)
                     # compute avg
                     if confidence_intervals:
-                        current_stds, aggregation_result = expectation_spn.evaluate_expectation_batch(return_node_status,
+                        current_stds, aggregation_result, node_status_exp = expectation_spn.evaluate_expectation_batch(return_node_status,
                             expectation,
                             technical_group_by_scopes,
                             result_tuples,
@@ -894,7 +898,7 @@ class SPNEnsemble:
                         avg_stds = np.sqrt(np.square(avg_stds) + np.square(current_stds))
 
                     else:
-                        _, aggregation_result = expectation_spn.evaluate_expectation_batch(return_node_status, expectation,
+                        _, aggregation_result, node_status_exp = expectation_spn.evaluate_expectation_batch(return_node_status, expectation,
                                                                                            technical_group_by_scopes,
                                                                                            result_tuples)
                     exp_end_t = perf_counter()
@@ -955,16 +959,16 @@ class SPNEnsemble:
                 for i in range(confidence_interval_stds.shape[0]):
                     confidence_values.append(
                         build_confidence_interval(result_values[i][-1], confidence_interval_stds[i]))
-                return confidence_values, result_tuples
-            return None, result_tuples
+                return confidence_values, result_tuples, node_status, node_status_exp
+            return None, result_tuples, node_status, node_status_exp
 
         # if no group by queries return single value
         if confidence_intervals:
-            return build_confidence_interval(result_values, confidence_interval_stds), result_values
+            return build_confidence_interval(result_values, confidence_interval_stds), result_values, node_status, node_status_exp
 
         if return_expectation:
-            return None, result_values, expectation_spn, expectation
-        return None, result_values
+            return None, result_values, expectation_spn, expectation, node_status, node_status_exp
+        return None, result_values, node_status, node_status_exp
 
     def cardinality(self,return_node_status, query, rdc_spn_selection=False, pairwise_rdc_path=None,
                     dry_run=False, merge_indicator_exp=True, max_variants=10, exploit_overlapping=False,
@@ -1212,13 +1216,13 @@ class SPNEnsemble:
 
             query.relationship_set -= set(next_mergeable_relationships)
 
-        values, cardinality, formula = evaluate_factors(return_node_status, dry_run, factors, self.cached_expecation_vals,
+        values, cardinality, formula, node_status = evaluate_factors(return_node_status, dry_run, factors, self.cached_expecation_vals,
                                                         gen_code_stats=gen_code_stats)
 
         if not return_factor_values:
-            return formula, factors, cardinality
+            return formula, factors, cardinality, node_status
         else:
-            return formula, factors, cardinality, values
+            return formula, factors, cardinality, values, node_status
 
     def _greedily_select_next_table(self, original_query, query, next_neighbours, exploit_overlapping, merged_tables,
                                     rdc_spn_selection=False, rdc_attribute_dict=None, prefer_disjunct=False):

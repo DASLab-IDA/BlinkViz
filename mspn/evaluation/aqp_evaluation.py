@@ -132,7 +132,7 @@ def evaluate_aqp_queries(return_node_status, target_ns_path, ensemble_location, 
         query = parse_query(query_str.strip(), schema)
         aqp_start_t = perf_counter()
         
-        confidence_intervals, aqp_result, ns = spn_ensemble.evaluate_query(return_node_status, query_no, query, rdc_spn_selection=rdc_spn_selection,
+        confidence_intervals, aqp_result, ns, ns_exp = spn_ensemble.evaluate_query(return_node_status, query_no, query, rdc_spn_selection=rdc_spn_selection,
                                                                     pairwise_rdc_path=pairwise_rdc_path,
                                                                     merge_indicator_exp=merge_indicator_exp,
                                                                     max_variants=max_variants,
@@ -194,7 +194,7 @@ def evaluate_aqp_queries(return_node_status, target_ns_path, ensemble_location, 
         else:
             logger.info(f"\t\tpredicted: {aqp_result}")
 
-        node_status.append(ns)
+        node_status.append(ns + ns_exp)
 
     save_csv(csv_rows, target_path)
     with open(target_ns_path, 'wb') as f:

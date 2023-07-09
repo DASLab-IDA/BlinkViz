@@ -103,13 +103,13 @@ class AQPSPN(CombineSPN, RSPN):
 
         return self
 
-    def evaluate_expectation(self, expectation, standard_deviations=False, gen_code_stats=None):
+    def evaluate_expectation(self, return_node_status, expectation, standard_deviations=False, gen_code_stats=None):
         """
         Evaluates expectation. Does transformations to map to SPN query compilation.
         :param expectation:
         :return:
         """
-        return self.evaluate_expectation_batch(expectation, None, None, standard_deviations=standard_deviations,
+        return self.evaluate_expectation_batch(return_node_status, expectation, None, None, standard_deviations=standard_deviations,
                                                gen_code_stats=gen_code_stats)
 
     def evaluate_indicator_expectation(self, return_node_status, indicator_expectation, standard_deviations=False,
@@ -158,7 +158,7 @@ class AQPSPN(CombineSPN, RSPN):
             inverted_features.append(True)
 
         std_values, exp_values, node_status_no, node_status_de = \
-            self._normalized_conditional_expectation(features, inverted_features=inverted_features,
+            self._normalized_conditional_expectation(return_node_status, features, inverted_features=inverted_features,
                                                      normalizing_scope=normalizing_scope,
                                                      range_conditions=range_conditions,
                                                      standard_deviations=standard_deviations,
@@ -238,11 +238,11 @@ class AQPSPN(CombineSPN, RSPN):
                 features.append(self.column_names.index(table + '.' + multiplier))
                 inverted_features.append(True)
         if standard_deviations:
-            std_values, exp_values = self._indicator_expectation_with_std(return_node_status, features, inverted_features=inverted_features,
+            std_values, exp_values, node_status_sq, node_status_x = self._indicator_expectation_with_std(return_node_status, features, inverted_features=inverted_features,
                                                                           range_conditions=range_conditions)
 
             result = postprocess_exps(return_node_status, indicator_expectation, features, exp_values, std_values)
-            return result
+            return result, node_status_x
 
         exp_values, node_status = self._indicator_expectation(return_node_status, features, inverted_features=inverted_features,
                                                  range_conditions=range_conditions, gen_code_stats=gen_code_stats)
