@@ -9,10 +9,10 @@ _CN.val_freq = 50000
 _CN.critical_params = []
 _CN.mixed_precision = False
 
-_CN.training_data_dir = "/home/qym/datasets/training_data_count_3model.pkl"
-_CN.test_data_dir = "/home/qym/datasets/training_data_count_3model.pkl"
+_CN.training_data_dir = "~/datasets/training_data_count_3model.pkl"
+_CN.test_data_dir = "~/datasets/training_data_count_3model.pkl"
 
-_CN.restore_ckpt = "/home/qym/spn_ensemble/logs/resd6h512i10w_update1/base/hidden_dim[512]spn_input_dims[[3, 3, 3]]useTree[False]depth[6]use_norm[False](02_09_11_36)/final.pth"
+_CN.restore_ckpt = "./logs/resd6h512i10w_update1/base/hidden_dim[512]spn_input_dims[[3, 3, 3]]useTree[False]depth[6]use_norm[False](02_09_11_36)/final.pth"
 #_CN.restore_ckpt = None
 
 _CN.model = 'base'
@@ -48,7 +48,7 @@ _CN.trainer = CN()
 _CN.trainer.scheduler = 'OneCycleLR'
 
 _CN.trainer.optimizer = 'adamw'
-_CN.trainer.canonical_lr = 25e-6
+_CN.trainer.canonical_lr = 25e-4
 _CN.trainer.adamw_decay = 1e-4
 _CN.trainer.clip = 1
 _CN.trainer.num_steps = 100000

@@ -1,9 +1,9 @@
 dataset='flights500M'
 csv_seperator=','
-csv_path='./flights-benchmark'
-hdf_path='./flights-benchmark/gen_hdf_03'
+csv_path='../flights-benchmark'
+hdf_path='../flights-benchmark/gen_hdf_01'
 ensemble_strategy='single'
-ensemble_path='./flights-benchmark/spn_ensembles_03'
+ensemble_path='./flights-benchmark/spn_ensembles_01'
 rdc_threshold=0.3
 
 python3 -Xfaulthandler maqp.py --generate_hdf --dataset $dataset --csv_seperator $csv_seperator --csv_path $csv_path --hdf_path $hdf_path
