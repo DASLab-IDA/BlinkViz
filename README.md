@@ -14,48 +14,51 @@ conda env create -f environment.yml
 
 ## Training
 
-The two modules are trained seperately. 
+To train several SPNEnsembles according to your datasets. Refer to the wiki of DeepDB [link](https://github.com/DataManagementLab/deepdb-public). You could choose to execute the commands of DeepDB, or directly run 
 
-1. To train several SPNEnsembles according to your datasets. Refer to the wiki of DeepDB [link](https://github.com/DataManagementLab/deepdb-public). You could choose to execute the commands of DeepDB, or directly run 
+````
+bash run_train_spn.sh
+````
 
-    ````
-    bash run_train_spn.sh
-    ````
+To train the neural network by running: 
 
-
-2. To train the neural network by running: 
-
-    ````
-    cd res_nn
-    bash run_train.sh [job name]
-    ````
-    
-
+````
+cd res_nn
+bash run_train.sh [job name]
+````
 
 ## Evaluation
 
-We achieved an end-to-end approximate query processing. You can choose to evaluate single query and get the answer immediately or to evaluate a batch of queries stored in a file and output the answers to a file.
-
-### Single Query
-
-You could evalute single query by
+To evaluate the SPNEnsembles by running the AQP evaluation commands of DeepDB
 
 ````
-bash run_single_query.sh
+python3 maqp.py --evaluate_aqp_queries
+    --dataset flights500M
+    --target_path ./baselines/aqp/results/deepDB/flights500M_model_based.csv
+    --ensemble_location ../flights-benchmark/spn_ensembles/ensemble_single_flights500M_10000000.pkl
+    --query_file_location ./benchmarks/flights/sql/aqp_queries.sql
+    --ground_truth_file_location ./benchmarks/flights/ground_truth_500M.pkl  
+    --target_ns_path ../flights-benchmark/spn_ensembles/tmp_ns_file
 ````
 
-The interface will prompt you to enter a query and return approximate query results.
-
-### A Batch of Queries
-
-You could evalute a batch of queries by
+To evaluate the residual network, original SQL with GROUP-BY clause should be converted into many SQL statements without GROUP-BY clause and get their corresponding SPN predictions as inputs. For example, if there is a query like
 
 ````
-bash run_batch_queries.sh
+SELECT DEST, COUNT(*) FROM flights WHERE YEAR_DATE=2000 GROUP BY DEST;
 ````
 
-The results will be stored in a CSV file. 
+it should be first decomposed into
 
-## Visualization
+````
+SELECT DEST, COUNT(*) FROM flights WHERE YEAR_DATE=2000 AND DEST='JFK';
+SELECT DEST, COUNT(*) FROM flights WHERE YEAR_DATE=2000 AND DEST='OW';
+````
 
-We also provide simple visualization options. You can choose to visualize the approximate answers in bar chart, line chart or pie chart by set options 'visualize=True' and 'visType=\[bar|line|pie\]' in run_single_query.sh.
+which exist as two training data records of the neural networks.
+
+And then run the evaluation by
+
+````
+cd res_nn
+bash run_evaluate.sh
+````
