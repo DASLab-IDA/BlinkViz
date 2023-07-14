@@ -1,0 +1,11 @@
+approach,query_no,latency,average_relative_error,bin_completeness,total_bins,query,sample_percentage
+ApproachType.MODEL_BASED,0,0.039140839129686356,6.6329589851754e-05,100,1,SELECT AVG(dep_delay) FROM flights WHERE origin='ATL';,100
+ApproachType.MODEL_BASED,1,0.0071456171572208405,0.11786021136045702,100,1,SELECT AVG(distance) FROM flights WHERE unique_carrier='TW';,100
+ApproachType.MODEL_BASED,2,0.012787289917469025,0.42990484693468894,100.0,26,"SELECT unique_carrier, COUNT(*) FROM flights WHERE origin_state_abr='LA' GROUP BY unique_carrier;",100
+ApproachType.MODEL_BASED,3,0.055345550179481506,0.9670267025981564,100.0,26,"SELECT unique_carrier, COUNT(*) FROM flights WHERE origin_state_abr='LA' AND  dest_state_abr='CA' GROUP BY unique_carrier;",100
+ApproachType.MODEL_BASED,4,0.014622393995523453,1.2559274602421318,100.0,22,"SELECT year_date, COUNT(*) FROM flights WHERE origin_state_abr='LA' AND dest='JFK' GROUP BY year_date;",100
+ApproachType.MODEL_BASED,5,0.22429592162370682,0.31636280528534455,100.0,22,"SELECT year_date, SUM(distance) FROM flights WHERE unique_carrier='9E' GROUP BY year_date;",100
+ApproachType.MODEL_BASED,6,0.4399155117571354,3.585985363569308,100.0,53,"SELECT origin_state_abr, SUM(air_time) FROM flights WHERE dest='HPN' GROUP BY origin_state_abr;",100
+ApproachType.MODEL_BASED,7,0.6565117463469505,0.031136352293714042,100.0,26,"SELECT unique_carrier, AVG(dep_delay) FROM flights WHERE year_date=2005 AND origin='PHX' GROUP BY unique_carrier;",100
+ApproachType.MODEL_BASED,8,0.8710657618939877,0.288755173423532,100.0,22,"SELECT year_date, SUM(arr_delay*dep_delay) FROM flights WHERE origin_state_abr = 'CA' AND dest_state_abr = 'HI' GROUP BY year_date;",100
+ApproachType.MODEL_BASED,9,0.14869529008865356,3.925242225784731,100.0,53,"SELECT dest_state_abr, SUM(taxi_out)-SUM(taxi_in) FROM flights WHERE unique_carrier = 'UA' AND origin = 'ATL' GROUP BY dest_state_abr;",100

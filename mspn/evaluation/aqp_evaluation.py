@@ -114,7 +114,7 @@ def evaluate_aqp_queries(return_node_status, target_ns_path, ensemble_location, 
     spn_ensemble = read_ensemble(ensemble_location, build_reverse_dict=True)
     
     csv_rows = []
-    node_status = []
+    node_status = dict()
 
     # read all queries
     with open(query_filename) as f:
@@ -139,6 +139,9 @@ def evaluate_aqp_queries(return_node_status, target_ns_path, ensemble_location, 
                                                                     exploit_overlapping=exploit_overlapping,
                                                                     debug=debug,
                                                                     confidence_intervals=show_confidence_intervals)
+        
+        print("aqp_evaluation - evaluate_queries - ns:", ns)
+        print("aqp_evaluation - evaluate_queries - ns_exp:", ns_exp)
 
         aqp_end_t = perf_counter()
         latency = aqp_end_t - aqp_start_t
@@ -194,11 +197,14 @@ def evaluate_aqp_queries(return_node_status, target_ns_path, ensemble_location, 
         else:
             logger.info(f"\t\tpredicted: {aqp_result}")
 
-        node_status.append(ns + ns_exp)
+        node_status[query_no] = []
+        node_status[query_no].append(ns)
+        node_status[query_no].append(ns_exp)
 
     save_csv(csv_rows, target_path)
-    with open(target_ns_path, 'wb') as f:
-        pickle.dump(node_status, target_ns_path, pickle.HIGHEST_PROTOCOL)
+    if return_node_status:
+        with open(target_ns_path, 'wb') as f:
+            pickle.dump(node_status, target_ns_path, pickle.HIGHEST_PROTOCOL)
 
 
 def evaluate_confidence_interval(confidence_interval, true_result, predicted):
@@ -264,113 +270,3 @@ def evaluate_group_by(aqp_result, true_result, confidence_intervals, medians=Fal
 
     max_error = math.inf if len(avg_relative_errors) == 0 else max(avg_relative_errors)
     return average_relative_error, bin_completeness, false_bin_percentage, total_bins, confidence_interval_precision, confidence_interval_length, max_error
-
-"""
-def stratified_evaluate(true_result, aqp_result, schema, query_str, query):
-
-    '''
-    # store the sampleratio data into .pkl files (dataframe format)
-    # ss1
-    sql = 'select groupname, ratio from sampleratio where samplename=\'flights_stratified\';'
-    db_connection = DBConnection(db='flights')
-    aqp_start_t = perf_counter()
-    rows = db_connection.get_result_set(sql)
-    aqp_end_t = perf_counter()
-    print("rows:", rows)
-    df = pd.DataFrame(rows, columns=['groupname','ratio'])
-    print("dataframe:", df)
-    #df = pd.concat([df['groupname'].str.split(',',expand=True), df['ratio']], axis=1) 
-    #df.columns=['year_date', 'unique_carrier', 'ratio']
-    #print("dataframe:", df)
-    with open("./benchmarks/flights/ss_ratios/ss1_ratio.pkl", 'wb+') as f:
-        pickle.dump(df, f, pickle.HIGHEST_PROTOCOL)
-
-    # ss2
-    sql = 'select groupname, ratio from sampleratio where samplename=\'flights_stratified_2\';'
-    db_connection = DBConnection(db='flights')
-    aqp_start_t = perf_counter()
-    rows = db_connection.get_result_set(sql)
-    aqp_end_t = perf_counter()
-    print("rows:", rows)
-    df = pd.DataFrame(rows, columns=['groupname','ratio'])
-    print("dataframe:", df)
-    with open("./benchmarks/flights/ss_ratios/ss2_ratio.pkl", 'wb+') as f:
-        pickle.dump(df, f, pickle.HIGHEST_PROTOCOL)
-
-    # ss3
-    sql = 'select groupname, ratio from sampleratio where samplename=\'flights_stratified_3\';'
-    db_connection = DBConnection(db='flights')
-    aqp_start_t = perf_counter()
-    rows = db_connection.get_result_set(sql)
-    aqp_end_t = perf_counter()
-    print("rows:", rows)
-    df = pd.DataFrame(rows, columns=['groupname','ratio'])
-    print("dataframe:", df)
-    #df = pd.concat([df['groupname'].str.split(',',expand=True), df['ratio']], axis=1) 
-    #df.columns=['dest', 'origin_state_abr', 'ratio']
-    #print("dataframe:", df)
-    with open("./benchmarks/flights/ss_ratios/ss3_ratio.pkl", 'wb+') as f:
-        pickle.dump(df, f, pickle.HIGHEST_PROTOCOL)
-    '''
-
-    from schemas.flights.schema import gen_flights_500M_stratified_1_schema, gen_flights_500M_stratified_2_schema, gen_flights_500M_stratified_3_schema
-    group_attrs = []
-    ssname = 'ss1'
-    samplename = ''
-    sampleratios = None
-    # 1. to decide which schema
-    if ssname=='ss1':
-        samplename = 'flights_stratified'
-        group_attrs.append('year_date')
-        group_attrs.append('unique_carrier')
-        with open("./benchmarks/flights/ss_ratios/ss1_ratio.pkl", 'rb') as f:
-            sampleratios = pickle.load(f)
-
-    elif ssname=='ss2':
-        samplename = 'flights_stratified_2'
-        group_attrs.append('origin')
-        with open("./benchmarks/flights/ss_ratios/ss2_ratio.pkl", 'rb') as f:
-            sampleratios = pickle.load(f)
-    elif ssname=='ss3':
-        samplename = 'flights_stratified_3'
-        group_attrs.append('origin_state_abr')
-        group_attrs.append('dest')
-        with open("./benchmarks/flights/ss_ratios/ss3_ratio.pkl", 'rb') as f:
-            sampleratios = pickle.load(f)
-    else:
-        print("No such schema")
-
-    print("stratified evaluation - true result:", true_result)
-    print("stratified evaluation - aqp result:", aqp_result)
-    common_group = list(set(group_attrs).intersection(set(list(dict(query.group_bys).values()))))
-    print("stratified evaluation - group_attrs:", group_attrs)
-    print("stratified evaluation - query.group_bys:", list(dict(query.group_bys).values()))
-    print("stratified evaluation - common_group:", common_group)
-    if len(common_group)==0:
-        return aqp_result
-    else:
-        if query.query_type == QueryType.CARDINALITY or any(
-                [aggregation_type == AggregationType.SUM or aggregation_type == AggregationType.COUNT
-                for _, aggregation_type, _ in query.aggregation_operations]):
-            unbiased_aqp_result = []
-            # 查询sampleratio
-            #sampleratio = sampleratios.groupby(common_group[0]).agg({'ratio': 'sum'})
-            print("sampleratios:", sampleratios)
-            #sampleratio.to_dict('list')
-            for item in aqp_result:
-                groupname = item[0]
-                if 'year_date' in common_group:
-                    groupname = str(int(groupname))
-                value = item[1]
-                print("groupname:", groupname)
-                print("value:", value)
-                a = sampleratios.loc[sampleratios['groupname']==groupname]['ratio'].values[0]
-                print("a:", a)
-                #print("selected:", sampleratios[sampleratios.loc[common_group[0]==groupname]]['ratio'])
-                unbiased_value = item[1]/(100*float(a))
-                unbiased_aqp_result.append((groupname, unbiased_value))
-            return unbiased_aqp_result
-        else:
-            return aqp_result
-    return aqp_result
-"""

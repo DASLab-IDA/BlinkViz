@@ -29,13 +29,13 @@ bash run_train.sh [job name]
 
 ## Evaluation
 
-To evaluate the SPNEnsembles by running the AQP evaluation commands of DeepDB
+To evaluate the SPNEnsembles of Flights dataset by running the AQP evaluation commands of DeepDB
 
 ````
 python3 maqp.py --evaluate_aqp_queries
     --dataset flights500M
     --target_path ./baselines/aqp/results/deepDB/flights500M_model_based.csv
-    --ensemble_location ../flights-benchmark/spn_ensembles/ensemble_single_flights500M_10000000.pkl
+    --ensemble_location ./flights-benchmark/spn_ensembles/ensemble_single_flights500M_10000000.pkl
     --query_file_location ./benchmarks/flights/sql/aqp_queries.sql
     --ground_truth_file_location ./benchmarks/flights/ground_truth_500M.pkl  
     --target_ns_path ../flights-benchmark/spn_ensembles/tmp_ns_file
@@ -55,6 +55,13 @@ SELECT DEST, COUNT(*) FROM flights WHERE YEAR_DATE=2000 AND DEST='OW';
 ````
 
 which exist as two training data records of the neural networks.
+
+The format of training data of residual network module is
+
+````
+[SPN1 status vector] [SPN2 status vector] [SPN3 status vector] [SPN1 prediction] [SPN2 prediction] [SPN3 prediction] [ground truth]
+````
+
 
 And then run the evaluation by
 

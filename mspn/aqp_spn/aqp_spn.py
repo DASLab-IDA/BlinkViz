@@ -169,9 +169,17 @@ class AQPSPN(CombineSPN, RSPN):
                 std_values = std_values.item()
             else:
                 std_values = std_values.reshape(len(group_by_tuples), 1)
+        print("evaluate_expectation_batch - exp_values:", exp_values)
+        print("evaluate_expectation_batch - node_status_no:", node_status_no)
+        print("evaluate_expectation_batch - node_status_de:", node_status_de)
+        print("evaluate_expectation_batch - expectation:", expectation)
 
         result = postprocess_exps(expectation, exp_values)
-        return std_values, result, node_status_no, node_status_de
+        print("evaluate_expectation_batch - result:", result)
+        node_status = dict()
+        node_status['no'] = node_status_no
+        node_status['de'] = node_status_de
+        return std_values, result, node_status
 
     def evaluate_indicator_expectation_batch(self, return_node_status, indicator_expectation, group_bys, group_by_tuples,
                                              standard_deviations=False, gen_code_stats=None):
@@ -241,13 +249,16 @@ class AQPSPN(CombineSPN, RSPN):
             std_values, exp_values, node_status_sq, node_status_x = self._indicator_expectation_with_std(return_node_status, features, inverted_features=inverted_features,
                                                                           range_conditions=range_conditions)
 
-            result = postprocess_exps(return_node_status, indicator_expectation, features, exp_values, std_values)
-            return result, node_status_x
+            std_result, exp_result = postprocess_exps(return_node_status, indicator_expectation, features, exp_values, std_values)
+            return std_result, exp_result, node_status_x
 
         exp_values, node_status = self._indicator_expectation(return_node_status, features, inverted_features=inverted_features,
                                                  range_conditions=range_conditions, gen_code_stats=gen_code_stats)
-        result = postprocess_exps(return_node_status, indicator_expectation, features, exp_values, None)
-        return result, node_status
+        std_result, exp_result = postprocess_exps(return_node_status, indicator_expectation, features, exp_values, None)
+        print("aqp_spn - evaluate_indicator_expectation - exp_values:", exp_values)
+        print("aqp_spn - evaluate_indicator_expectation - exp_result:", exp_result)
+        print("aqp_spn - evaluate_indicator_expectation - node_status:", node_status)
+        return std_result, exp_result, node_status
 
     # 获取result tuples
     def evaluate_group_by_combinations(self, features, range_conditions=None):

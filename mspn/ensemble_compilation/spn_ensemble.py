@@ -521,6 +521,8 @@ def evaluate_factors(return_node_status, dry_run, factors_full, cached_expecatio
                     # to be continue
                     _, exp, node_status = factor.spn.evaluate_indicator_expectation(return_node_status, factor, gen_code_stats=gen_code_stats,
                                                                        standard_deviations=False)
+                    print("evaluate_factors - indicatorexpectation - factor:", factor)
+                    print("evaluate_factors - indicatorexpectation - exp:", exp)
                     cached_expecation_vals[hash(factor)] = exp
 
                 if confidence_intervals:
@@ -528,6 +530,7 @@ def evaluate_factors(return_node_status, dry_run, factors_full, cached_expecatio
                 non_constant_factors.append(i)
                 values.append(exp)
                 cardinality *= exp
+                print("evaluate_factors - indicatorexpectation - cardinality:", cardinality)
 
             elif isinstance(factor, Expectation):
                 if not confidence_intervals and cached_expecation_vals.get(hash(factor)) is not None:
@@ -535,6 +538,10 @@ def evaluate_factors(return_node_status, dry_run, factors_full, cached_expecatio
                 else:
                     std, exp, node_status = factor.spn.evaluate_expectation(return_node_status, factor, standard_deviations=confidence_intervals,
                                                                gen_code_stats=gen_code_stats)
+                
+                    print("evaluate_factors - expectation - factor:", factor)
+                    print("evaluate_factors - expectation - exp:", exp)
+
                     if confidence_intervals:
                         ci_index = exps_counter + 2
                         factor_exps[:, ci_index] = exp
@@ -543,6 +550,8 @@ def evaluate_factors(return_node_status, dry_run, factors_full, cached_expecatio
                 non_constant_factors.append(i)
                 values.append(exp)
                 cardinality *= exp
+                
+                print("evaluate_factors - expectation - cardinality:", cardinality)
 
                 exps_counter += 1
 
@@ -761,6 +770,8 @@ class SPNEnsemble:
 
         result_tuples = None
         technical_group_by_scopes = []
+        node_status = None
+        node_status_exp = None
         
         if len(query.group_bys) > 0:
             group_by_start_t = perf_counter()
@@ -796,7 +807,7 @@ class SPNEnsemble:
                 artificially_added_conditions.append((table, condition,))
                 prototype_query.add_where_condition(table, condition)
             # predict prototype_query
-            # print("rdc_spn_selection:", rdc_spn_selection)
+            print("prototype_query conditions:", prototype_query.conditions)
             _, factors, cardinalities, factor_values, node_status = self.cardinality(return_node_status, prototype_query,
                                                                         rdc_spn_selection=rdc_spn_selection,
                                                                         pairwise_rdc_path=pairwise_rdc_path,
@@ -806,6 +817,10 @@ class SPNEnsemble:
                                                                         exploit_overlapping=exploit_overlapping,
                                                                         return_factor_values=True,
                                                                         exploit_incoming_multipliers=exploit_incoming_multipliers)
+            print("prototype_query factors:", factors)
+            print("prototype_query cardinalities:", cardinalities)
+            print("prototype_query factor_values:", factor_values)
+            print("prototype_query node_status:", node_status)
             prot_card_end_t = perf_counter()
             if debug:
                 if len(query.group_bys) == 0:
@@ -858,7 +873,7 @@ class SPNEnsemble:
 
         if query.query_type == QueryType.CARDINALITY:
             if confidence_intervals:
-                return build_confidence_interval(cardinalities, cardinality_stds), cardinalities
+                return build_confidence_interval(cardinalities, cardinality_stds), cardinalities, node_status
             return None, cardinalities, node_status
 
         # case 2: SUM/AVG - compute AVG
@@ -1215,9 +1230,15 @@ class SPNEnsemble:
                 corresponding_exp_dict[table] = nominator_expectation
 
             query.relationship_set -= set(next_mergeable_relationships)
+        
+        print("spn_ensemble - _cardinality_with_injected_start - factors:", factors)
 
         values, cardinality, formula, node_status = evaluate_factors(return_node_status, dry_run, factors, self.cached_expecation_vals,
                                                         gen_code_stats=gen_code_stats)
+        print("spn_ensemble - _cardinality_with_injected_start - values:", values)
+        print("spn_ensemble - _cardinality_with_injected_start - cardinality:", cardinality)
+        print("spn_ensemble - _cardinality_with_injected_start - formula:", formula)
+        print("spn_ensemble - _cardinality_with_injected_start - node_status:", node_status)
 
         if not return_factor_values:
             return formula, factors, cardinality, node_status

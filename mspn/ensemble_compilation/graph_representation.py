@@ -138,7 +138,6 @@ class Query:
         self.group_bys = []
         self.bins = [] # (attribute_name, bin_size)
 
-    # ?
     def remove_conditions_for_attributes(self, table, attributes):
         def conflicting(condition):
             return any([condition.startswith(attribute + ' ') or condition.startswith(attribute + '<') or

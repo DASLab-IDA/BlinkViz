@@ -47,9 +47,6 @@ def validate(model, cfg):
         print("gt:", gt)
         
         relative_error_list.append(relative_error.view(-1).numpy())
-        
-
-    print("total_time:", total_time)   
 
     relative_error_all = np.concatenate(relative_error_list)
     
@@ -65,7 +62,7 @@ def count_parameters(model):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--device', default='cpu')
-    #parser.add_argument('--dataset_batch', default="/home/qym/datasets/single_queries/")
+    #parser.add_argument('--dataset_batch', default="~/datasets/single_queries/")
     args = parser.parse_args()
     cfg = get_cfg()
     cfg.update(vars(args))

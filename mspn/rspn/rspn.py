@@ -183,7 +183,7 @@ class RSPN:
             full_result, node_status = expectation(return_node_status, self.mspn, feature_scope, inverted_features, range_conditions,
                                       node_expectation=_node_expectation, node_likelihoods=_node_likelihoods_range)
 
-        print("node_status:", node_status)
+        print("rspn - _indicator_expectation - node_status:", node_status)
         return full_result, node_status
 
     def _augment_not_null_conditions(self, feature_scope, range_conditions):
@@ -255,20 +255,25 @@ class RSPN:
         """
 
         range_conditions = self._augment_not_null_conditions(feature_scope, range_conditions)
-        # avg case1
+
         unnormalized_exp, node_status = self._indicator_expectation(return_node_status, feature_scope, inverted_features=inverted_features,
                                                        range_conditions=range_conditions, gen_code_stats=gen_code_stats)
         p, node_status_p = self._probability(return_node_status, range_conditions)
+        print("_unnormalized_conditional_expectation - unnormalized_exp:", unnormalized_exp)
+        print("_unnormalized_conditional_expectation - p:", p)
         if any(p == 0):
+            print("_unnormalized_conditional_expectation - any p == 0")
             if impute_p:
                 impute_val = np.mean(
                     unnormalized_exp[np.where(p != 0)[0]] / p[np.where(p != 0)[0]])
                 result = unnormalized_exp / p
                 result[np.where(p == 0)[0]] = impute_val
-                return result
+                return result, node_status, node_status_p
             return self._indicator_expectation(return_node_status, feature_scope, inverted_features=inverted_features,
-                                               gen_code_stats=gen_code_stats)
-
+                                               gen_code_stats=gen_code_stats), node_status_p
+        print("_unnormalized_conditional_expectation - unnormalized_exp/p:", unnormalized_exp /p)
+        print("_unnormalized_conditional_expectation - node_status:", node_status)
+        print("_unnormalized_conditional_expectation - node_status_p:", node_status_p)
         return unnormalized_exp / p, node_status, node_status_p
 
     def _unnormalized_conditional_expectation_with_std(self, return_node_status, feature_scope, inverted_features=None,
@@ -295,8 +300,7 @@ class RSPN:
 
         n = p * self.full_sample_size
         std = np.sqrt(v_x / n)
-        print("node_status_sq:", node_status_sq)
-        print("node_status_x:", node_status_x)
+        
         return std, e_x, node_status_sq, node_status_x
 
     def _normalized_conditional_expectation(self, return_node_status, feature_scope, inverted_features=None, normalizing_scope=None,
@@ -317,6 +321,7 @@ class RSPN:
             range_conditions = np.array([None] * len(self.mspn.scope)).reshape(1, len(self.mspn.scope))
 
         # If normalization is not required, simply return unnormalized conditional expectation
+        print("_normalized_conditional_expectation - normalizing_scope:", normalizing_scope)
         
         if normalizing_scope is None or len(normalizing_scope) == 0:
             if standard_deviations:
@@ -325,11 +330,12 @@ class RSPN:
                                                                            range_conditions=range_conditions,
                                                                            gen_code_stats=gen_code_stats)
             else:
-                return None, self._unnormalized_conditional_expectation(return_node_status, feature_scope,
+                result, node_status, node_status_p = self._unnormalized_conditional_expectation(return_node_status, feature_scope,
                                                                         inverted_features=inverted_features,
                                                                         range_conditions=range_conditions,
                                                                         impute_p=impute_p,
                                                                         gen_code_stats=gen_code_stats)
+                return None,  result, node_status, node_status_p
 
         assert set(normalizing_scope).issubset(feature_scope), "Normalizing scope must be subset of feature scope"
 
