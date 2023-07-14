@@ -169,13 +169,8 @@ class AQPSPN(CombineSPN, RSPN):
                 std_values = std_values.item()
             else:
                 std_values = std_values.reshape(len(group_by_tuples), 1)
-        print("evaluate_expectation_batch - exp_values:", exp_values)
-        print("evaluate_expectation_batch - node_status_no:", node_status_no)
-        print("evaluate_expectation_batch - node_status_de:", node_status_de)
-        print("evaluate_expectation_batch - expectation:", expectation)
 
         result = postprocess_exps(expectation, exp_values)
-        print("evaluate_expectation_batch - result:", result)
         node_status = dict()
         node_status['no'] = node_status_no
         node_status['de'] = node_status_de
@@ -255,15 +250,12 @@ class AQPSPN(CombineSPN, RSPN):
         exp_values, node_status = self._indicator_expectation(return_node_status, features, inverted_features=inverted_features,
                                                  range_conditions=range_conditions, gen_code_stats=gen_code_stats)
         std_result, exp_result = postprocess_exps(return_node_status, indicator_expectation, features, exp_values, None)
-        print("aqp_spn - evaluate_indicator_expectation - exp_values:", exp_values)
-        print("aqp_spn - evaluate_indicator_expectation - exp_result:", exp_result)
-        print("aqp_spn - evaluate_indicator_expectation - node_status:", node_status)
+
         return std_result, exp_result, node_status
 
-    # 获取result tuples
     def evaluate_group_by_combinations(self, features, range_conditions=None):
         if range_conditions is not None:
-            range_conditions = self._parse_conditions(range_conditions) # condition的内容还要看下
+            range_conditions = self._parse_conditions(range_conditions) 
         feature_scope = []
         replaced_features = []
         # check if group by attribute is in relevant attributes, could also be omitted because of FD redundancy

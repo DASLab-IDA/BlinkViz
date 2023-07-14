@@ -76,7 +76,6 @@ if __name__ == '__main__':
     model.cuda()
     model.eval()
 
-    print(cfg.model)
     print("Parameter Count: %d" % count_parameters(model))
     with torch.no_grad():
         validate(model.module, cfg)

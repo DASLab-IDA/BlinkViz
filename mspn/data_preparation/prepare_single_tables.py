@@ -146,8 +146,6 @@ def prepare_single_table(schema_graph, table, path, max_distinct_vals=10000, csv
     table_meta_data['null_values_column'] = []
     del_cat_attributes = []
 
-    print("prepare_single_tables - table_data.dtypes:", table_data.dtypes)
-
     for rel_attribute in relevant_attributes:
 
         attribute = table + '.' + rel_attribute

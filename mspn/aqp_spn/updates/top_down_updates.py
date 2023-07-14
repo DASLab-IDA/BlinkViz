@@ -17,19 +17,17 @@ def cluster_center_update_dataset_batch(spn, dataset):
     from 1-D to m-D
     """
     if isinstance(spn, Categorical):
-        print("update categorical leaf:")
 
         insert_into_categorical_leaf_batch(spn, np.array(dataset), np.ones(len(dataset)))
 
         return spn
     elif isinstance(spn, IdentityNumericLeaf):
-        print("update identity numeric leaf:")
 
         insert_into_identity_numeric_leaf_batch(spn, np.array(dataset), np.ones(len(dataset)))
 
         return spn
     elif isinstance(spn, Sum):
-        print("update sum node:")
+
         cc = spn.cluster_centers
 
         node_idx = 0 # current cluster id

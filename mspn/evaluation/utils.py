@@ -24,13 +24,8 @@ def _extract_identifiers(tokens, enforce_single=True):
 
 # Find corresponding table of attribute
 def _find_matching_table(attribute, schema, alias_dict):
-    #print("schema: ", schema)
-    #print("alias_dict: ", alias_dict)
-    #print("schema.tables: ", schema.tables)
     table_name = None
     for table_obj in schema.tables:
-    #    print("table_obj.table_name: ", table_obj.table_name)
-    #   print("alias_dict.keys(): ", alias_dict.keys())
         if table_obj.table_name not in alias_dict.keys():
             continue
         if attribute in table_obj.attributes:
@@ -154,26 +149,17 @@ def parse_query(query_str, schema):
     """
     query = Query(schema)
 
-    print("utils.parse_query original query_str:", query_str)
-    print("utils.parse_query original query_str type:", type(query_str))
-
     #pattern = re.compile(r'[(](.*?)[)]')
     pattern = re.compile(r'round[(](.*?)[)]')
     bin_desc = pattern.findall(query_str)
-    print("util.parse_query bin_desc:", bin_desc)
     if len(bin_desc)>0:
         for each_desc in bin_desc:
-            print("util.parse_query each_desc:", each_desc)
             strs = each_desc.split('/')
-            print("util.parse_query strs:", strs)
             bin_attr = strs[0]
             bin_size = strs[1]
-            print("util.parse_query add_bins:", bin_attr, float(bin_size))
             query.add_bins(bin_attr, float(bin_size))
 
             query_str = query_str.replace("round("+each_desc+")", bin_attr)
-
-        print("utils.parse_query prepared query_str:", query_str)
 
     # split query into part before from
     parsed_tokens = sqlparse.parse(query_str)[0]
@@ -355,7 +341,6 @@ def handle_aggregation(alias_dict, query, schema, tokens_before_from):
     assert len(operations) <= 1, "A maximum of 1 operation is supported."
     if len(operations) == 0:
         functions = [token for token in tokens_before_from if isinstance(token, sqlparse.sql.Function)]
-        print("handle_aggregation-functions:", functions)
         assert len(functions) == 1, "Only a single aggregate function is supported."
         function = functions[0]
         _parse_aggregation(alias_dict, function, query, schema)
@@ -380,7 +365,6 @@ def save_csv(csv_rows, target_csv_path):
     logger.info(f"Saving results to {target_csv_path}")
 
     with open(target_csv_path, 'w', newline='') as f:
-        print("csv_rows:", csv_rows)
         w = csv.DictWriter(f, csv_rows[0].keys())
         for i, row in enumerate(csv_rows):
             if i == 0:

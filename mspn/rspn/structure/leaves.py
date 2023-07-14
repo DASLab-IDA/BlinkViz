@@ -150,8 +150,6 @@ def _interval_probability(node, left, right, null_value, left_included, right_in
         p -= node.null_value_prob
 
     # left value should not be included in interval
-    # print("rspn leaves node.scope:", node.scope)
-    # print("rspn leaves node.unique_vals:", len(node.unique_vals))
     if lower_idx>=len(node.unique_vals):
         lower_idx = len(node.unique_vals)-1
     if not left_included and node.unique_vals[lower_idx] == left:

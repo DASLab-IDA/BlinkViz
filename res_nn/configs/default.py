@@ -41,7 +41,6 @@ _CN.base.count = False
 _CN.base.critical_params = ["hidden_dim", "spn_input_dims", "useTree", "depth", "use_norm"]
 _CN.base.zero_debug = False
 _CN.base.res_mlp = True
-#_CN.base.dataset_batch = "/home/qym/datasets/testSetCount_norm_1000-mean_crop3.pkl"
 
 ### TRAINER
 _CN.trainer = CN()

@@ -58,28 +58,22 @@ class SPNDataset(data.Dataset):
             tmp = []
             for i in range(spn_num):
                 flatTree = self.data_list[index][i][0]
-                #print(flatTree)
                 flatTree = flatTree.reshape(-1)
-                #print("flatTree.shape:", flatTree.shape)
                 if isinstance(flatTree, np.ndarray):
                     flatTree = torch.zeros(self.cfg.base.spn_input_dims[i*2])
-                    #print(flatTree.shape)
-                #print(type(flatTree), i)
+
                 tmp.append(flatTree)
 
                 indexes = self.data_list[index][i][1]
                 indexes = indexes.reshape(-1)
-                #print(type(indexes), i)
-                #if isinstance(indexes, np.ndarray):
-                #    print("indexes:",indexes)
-                
+
                 tmp.append(indexes)
             
             spn_values = torch.cat(tmp)
-            #print(spn_values.shape)
+
         else:
             spn_values = np.array(sum(self.data_list[index][:spn_num], []))
-            #print("spn_values:", spn_values)
+
             spn_values = torch.from_numpy(spn_values).float()
         
         spn_preds = np.array(self.data_list[index][-2])

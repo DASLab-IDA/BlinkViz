@@ -140,15 +140,12 @@ def evaluate_aqp_queries(return_node_status, target_ns_path, ensemble_location, 
                                                                     debug=debug,
                                                                     confidence_intervals=show_confidence_intervals)
         
-        print("aqp_evaluation - evaluate_queries - ns:", ns)
-        print("aqp_evaluation - evaluate_queries - ns_exp:", ns_exp)
 
         aqp_end_t = perf_counter()
         latency = aqp_end_t - aqp_start_t
         logger.info(f"\t\t{'total_time:':<32}{latency} secs")
 
         if ground_truth is not None:
-            print("aqp_evaluation ground_truth length:", len(ground_truth))
             true_result = ground_truth[query_no]
             
             if isinstance(aqp_result, list):
@@ -221,21 +218,8 @@ def evaluate_group_by(aqp_result, true_result, confidence_intervals, medians=Fal
     confidence_interval_precision = 0
     confidence_interval_length = 0
 
-    print("aqp_evaluation true_result:", true_result)
     for result_row in true_result:
-        # print("aqp_evaluation result_row:", result_row)
         group_by_attributes = result_row[:-1]
-        # print("aqp_evaluation aqp_result:", aqp_result)
-        # print("group_by_attributes:", group_by_attributes)
-        # print("type of group_by_attributes:", type(group_by_attributes))
-        # for matching_idx, aqp_row in enumerate(aqp_result):
-        #     print("type of aqp_row:", type(aqp_row))
-        #     print("aqp_row:", aqp_row)
-        #     print("aqp_row[:-1] to tuple:", tuple(aqp_row)[:-1])
-        #     print("type of aqp_row[:-1]:", type(aqp_row[:-1]))
-
-
-        # aqp_row: np.record -> transformed into tuple
         matching_aqp_rows = [(matching_idx, aqp_row) for matching_idx, aqp_row in enumerate(aqp_result)
                              if tuple(aqp_row)[:-1] == group_by_attributes]
         assert len(matching_aqp_rows) <= 1, "Multiple possible group by attributes found."

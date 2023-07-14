@@ -222,7 +222,6 @@ def read_ensemble(ensemble_locations, build_reverse_dict=False):
     ensemble = SPNEnsemble(None)
     for ensemble_location in ensemble_locations:
         with open(ensemble_location, 'rb') as handle:
-            print("location:",ensemble_location)
             current_ensemble = pickle.load(handle)
             ensemble.schema_graph = current_ensemble.schema_graph
             for spn in current_ensemble.spns:
@@ -521,8 +520,6 @@ def evaluate_factors(return_node_status, dry_run, factors_full, cached_expecatio
                     # to be continue
                     _, exp, node_status = factor.spn.evaluate_indicator_expectation(return_node_status, factor, gen_code_stats=gen_code_stats,
                                                                        standard_deviations=False)
-                    print("evaluate_factors - indicatorexpectation - factor:", factor)
-                    print("evaluate_factors - indicatorexpectation - exp:", exp)
                     cached_expecation_vals[hash(factor)] = exp
 
                 if confidence_intervals:
@@ -530,7 +527,6 @@ def evaluate_factors(return_node_status, dry_run, factors_full, cached_expecatio
                 non_constant_factors.append(i)
                 values.append(exp)
                 cardinality *= exp
-                print("evaluate_factors - indicatorexpectation - cardinality:", cardinality)
 
             elif isinstance(factor, Expectation):
                 if not confidence_intervals and cached_expecation_vals.get(hash(factor)) is not None:
@@ -539,8 +535,6 @@ def evaluate_factors(return_node_status, dry_run, factors_full, cached_expecatio
                     std, exp, node_status = factor.spn.evaluate_expectation(return_node_status, factor, standard_deviations=confidence_intervals,
                                                                gen_code_stats=gen_code_stats)
                 
-                    print("evaluate_factors - expectation - factor:", factor)
-                    print("evaluate_factors - expectation - exp:", exp)
 
                     if confidence_intervals:
                         ci_index = exps_counter + 2
@@ -550,8 +544,6 @@ def evaluate_factors(return_node_status, dry_run, factors_full, cached_expecatio
                 non_constant_factors.append(i)
                 values.append(exp)
                 cardinality *= exp
-                
-                print("evaluate_factors - expectation - cardinality:", cardinality)
 
                 exps_counter += 1
 
@@ -664,7 +656,7 @@ class SPNEnsemble:
             # search for spn with maximal matching where conditions
             for spn in self.spns:
                 potential_group_by_columns = set(spn.column_names)
-                for table in spn.table_set: # 当前SPN包括的表的集合
+                for table in spn.table_set: 
                     potential_group_by_columns = potential_group_by_columns.union(
                         spn.table_meta_data[table]['fd_dict'].keys())
 
@@ -692,13 +684,10 @@ class SPNEnsemble:
             for attribute in attribute_list:
                 group_by_permutation[group_by_list.index(attribute)] = attribute_counter
                 attribute_counter += 1
-        #print("group_by_permutation:", str(group_by_permutation))
-        #print("dict_items:", str(dict_items))
 
         result_tuples = None
         result_tuples_translated = None
         group_bys_scopes = []
-        #print("dict_items:", dict_items)
         for spn, attribute_list in dict_items:
             conditions = spn.relevant_conditions(query) # ?
             group_bys_scope, temporary_results, temporary_results_translated = spn.evaluate_group_by_combinations(
@@ -807,7 +796,6 @@ class SPNEnsemble:
                 artificially_added_conditions.append((table, condition,))
                 prototype_query.add_where_condition(table, condition)
             # predict prototype_query
-            print("prototype_query conditions:", prototype_query.conditions)
             _, factors, cardinalities, factor_values, node_status = self.cardinality(return_node_status, prototype_query,
                                                                         rdc_spn_selection=rdc_spn_selection,
                                                                         pairwise_rdc_path=pairwise_rdc_path,
@@ -817,10 +805,6 @@ class SPNEnsemble:
                                                                         exploit_overlapping=exploit_overlapping,
                                                                         return_factor_values=True,
                                                                         exploit_incoming_multipliers=exploit_incoming_multipliers)
-            print("prototype_query factors:", factors)
-            print("prototype_query cardinalities:", cardinalities)
-            print("prototype_query factor_values:", factor_values)
-            print("prototype_query node_status:", node_status)
             prot_card_end_t = perf_counter()
             if debug:
                 if len(query.group_bys) == 0:
@@ -1230,15 +1214,9 @@ class SPNEnsemble:
                 corresponding_exp_dict[table] = nominator_expectation
 
             query.relationship_set -= set(next_mergeable_relationships)
-        
-        print("spn_ensemble - _cardinality_with_injected_start - factors:", factors)
 
         values, cardinality, formula, node_status = evaluate_factors(return_node_status, dry_run, factors, self.cached_expecation_vals,
                                                         gen_code_stats=gen_code_stats)
-        print("spn_ensemble - _cardinality_with_injected_start - values:", values)
-        print("spn_ensemble - _cardinality_with_injected_start - cardinality:", cardinality)
-        print("spn_ensemble - _cardinality_with_injected_start - formula:", formula)
-        print("spn_ensemble - _cardinality_with_injected_start - node_status:", node_status)
 
         if not return_factor_values:
             return formula, factors, cardinality, node_status

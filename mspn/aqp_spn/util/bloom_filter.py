@@ -515,7 +515,6 @@ class BloomFilter(object):
                  probe_bitnoer=get_bitno_lin_comb,
                  filename=None,
                  start_fresh=False):
-        print("bloom!!!!!!!!!")
         # pylint: disable=R0913
         # R0913: We want a few arguments
         if max_elements <= 0:

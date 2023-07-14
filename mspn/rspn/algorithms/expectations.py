@@ -71,20 +71,17 @@ def expectation(return_node_status, spn, feature_scope, inverted_features, range
             result, ns = expectation_recursive(return_node_status, spn, feature_scope, inverted_features, relevant_scope, evidence,
                                         node_expectation, node_likelihoods, node_status)
             result = np.array([result])
-            print("node_status - exp_recursive:", ns)
             return result, ns
     # full batch version
     node_status = dict()
     result, ns = expectation_recursive_batch(return_node_status, spn, feature_scope, inverted_features, relevant_scope, evidence,
                                        node_expectation, node_likelihoods, node_status)
-    print("node_status - exp_recursive_batch:", ns)
 
     return result, ns
 
 def expectation_recursive_batch(return_node_status, node, feature_scope, inverted_features, relevant_scope, evidence, node_expectation,
                                 node_likelihoods, node_status):
     if isinstance(node, Product):
-        print("exp_batch - product - node:", node.id)
 
         llchildren = np.concatenate(
             [expectation_recursive_batch(return_node_status, child, feature_scope, inverted_features, relevant_scope, evidence,
@@ -92,8 +89,6 @@ def expectation_recursive_batch(return_node_status, node, feature_scope, inverte
              for child in node.children if
              len(relevant_scope.intersection(child.scope)) > 0], axis=1)
         result = np.nanprod(llchildren, axis=1).reshape(-1, 1)
-
-        print("exp_batch - product - node_status:", result)
         
         if node.id in list(node_status.keys()):
             node_status[node.id].append(result)
@@ -103,7 +98,6 @@ def expectation_recursive_batch(return_node_status, node, feature_scope, inverte
         return result, node_status
 
     elif isinstance(node, Sum):
-        print("exp_batch - sum - node:", node.id)
         if len(relevant_scope.intersection(node.scope)) == 0:
             result = np.full((evidence.shape[0], 1), np.nan)
             
@@ -112,7 +106,6 @@ def expectation_recursive_batch(return_node_status, node, feature_scope, inverte
             else:
                 node_status[node.id] = []
                 node_status[node.id].append(result)
-            print("exp_batch - sum - node_status:", result)
             return result, node_status
 
         llchildren = np.concatenate(
@@ -128,7 +121,6 @@ def expectation_recursive_batch(return_node_status, node, feature_scope, inverte
                 node_status[node.id] = []
                 node_status[node.id].append(np.array([np.nan]))
         
-            print("exp_batch - sum - node_status:", np.array([np.nan]))
             return np.array([np.nan]), node_status
 
         weights_normalizer = sum(node.weights[j] for j in relevant_children_idx)
@@ -136,7 +128,6 @@ def expectation_recursive_batch(return_node_status, node, feature_scope, inverte
 
         result = np.dot(llchildren[:, relevant_children_idx], b).reshape(-1, 1)
         
-        print("exp_batch - sum - node_status:", result)
         if node.id in list(node_status.keys()):
             node_status[node.id].append(result)
         else:
@@ -145,7 +136,6 @@ def expectation_recursive_batch(return_node_status, node, feature_scope, inverte
         return result, node_status
 
     else:
-        print("exp_batch - leaf - node:", node.id)
         if node.scope[0] in feature_scope:
             t_node = type(node)
             if t_node in node_expectation:
@@ -155,8 +145,6 @@ def expectation_recursive_batch(return_node_status, node, feature_scope, inverte
                 inverted = inverted_features[feature_idx]
 
                 exps[:] = node_expectation[t_node](node, evidence, inverted=inverted)
-            
-                print("exp_batch - leaf - node_expectation:", exps)
                 
                 if node.id in list(node_status.keys()):
                     node_status[node.id].append(exps)
@@ -168,8 +156,6 @@ def expectation_recursive_batch(return_node_status, node, feature_scope, inverte
                 raise Exception('Node type unknown: ' + str(t_node))
 
         result = likelihood(node, evidence, node_likelihood=node_likelihoods)
-    
-        print("exp_batch - leaf - node_likelihood:", result)
         
         if node.id in list(node_status.keys()):
             node_status[node.id].append(result)
@@ -195,16 +181,12 @@ def nanproduct(product, factor):
 def expectation_recursive(return_node_status, node, feature_scope, inverted_features, relevant_scope, evidence, node_expectation,
                           node_likelihoods, node_status):
     if isinstance(node, Product):
-        print("exp - product - node:", node.id)
         product = np.nan
         for child in node.children:
             if len(relevant_scope.intersection(child.scope)) > 0:
                 factor, node_status = expectation_recursive(return_node_status, child, feature_scope, inverted_features, relevant_scope, evidence,
                                                node_expectation, node_likelihoods, node_status)
                 product = nanproduct(product, factor)
-                print("exp - product - children:", child.id)
-                print("exp - product - factor:", factor)
-                print("exp - product - node_status:", node_status)
                 
                 
         if node.id in list(node_status.keys()):
@@ -215,7 +197,6 @@ def expectation_recursive(return_node_status, node, feature_scope, inverted_feat
         return product, node_status
 
     elif isinstance(node, Sum):
-        print("exp - sum - node:", node.id)
         if len(relevant_scope.intersection(node.scope)) == 0:
             
             if node.id in list(node_status.keys()):
@@ -223,7 +204,6 @@ def expectation_recursive(return_node_status, node, feature_scope, inverted_feat
             else:
                 node_status[node.id] = []
                 node_status[node.id].append(np.nan)
-            print("exp - sum - node_status:", np.nan)
             return np.nan, node_status
 
         llchildren = []
@@ -231,9 +211,6 @@ def expectation_recursive(return_node_status, node, feature_scope, inverted_feat
             c, ns = expectation_recursive(return_node_status, child, feature_scope, inverted_features, relevant_scope, evidence,
                                             node_expectation, node_likelihoods, node_status)
             llchildren.append(c)
-            print("exp - sum - children:", child.id)
-            print("exp - sum - c:", c)
-            print("exp - sum - node_status:", ns)
 
         relevant_children_idx = np.where(np.isnan(llchildren) == False)[0]
 
@@ -244,15 +221,12 @@ def expectation_recursive(return_node_status, node, feature_scope, inverted_feat
             else:
                 node_status[node.id] = []
                 node_status[node.id].append(np.nan)
-            print("exp - sum - node_status:", np.nan)
             return np.nan, node_status
 
         weights_normalizer = sum(node.weights[j] for j in relevant_children_idx)
         weighted_sum = sum(node.weights[j] * llchildren[j] for j in relevant_children_idx)
 
         result = weighted_sum / weights_normalizer
-
-        print("exp - sum - node_status:", result)
         
         if node.id in list(node_status.keys()):
             node_status[node.id].append(result)
@@ -262,7 +236,6 @@ def expectation_recursive(return_node_status, node, feature_scope, inverted_feat
         return result, node_status
 
     else:
-        print("exp - leaf - node:", node.id)
         if node.scope[0] in feature_scope:
             t_node = type(node)
             if t_node in node_expectation:
@@ -271,8 +244,6 @@ def expectation_recursive(return_node_status, node, feature_scope, inverted_feat
                 inverted = inverted_features[feature_idx]
 
                 result = node_expectation[t_node](node, evidence, inverted=inverted).item()
-                
-                print("exp - leaf - node_exp:", result)
                 
                 if node.id in list(node_status.keys()):
                     node_status[node.id].append(result)
@@ -284,7 +255,6 @@ def expectation_recursive(return_node_status, node, feature_scope, inverted_feat
             else:
                 raise Exception('Node type unknown: ' + str(t_node))
         result = node_likelihoods[type(node)](node, evidence).item()
-        print("exp - leaf - node_likelihoods:", result)
         
         if node.id in list(node_status.keys()):
             node_status[node.id].append(result)
