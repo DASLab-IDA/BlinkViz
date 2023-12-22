@@ -69,3 +69,7 @@ And then run the evaluation by
 cd res_nn
 bash run_evaluate.sh
 ````
+
+## Citation
+
+Yimeng Qiao, Yinan Jing, Hanbing Zhang, Zhenying He, Kai Zhang, and X. Sean Wang. 2023. BlinkViz: Fast and Scalable Approximate Visualization on Very Large Datasets using Neural-Enhanced Mixed Sum-Product Networks. In Proceedings of the ACM Web Conference 2023 (WWW '23). Association for Computing Machinery, New York, NY, USA, 1734–1742. https://doi.org/10.1145/3543507.3583411
